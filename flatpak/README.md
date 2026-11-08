@@ -71,14 +71,14 @@ Check that a screenshot opens in your browser: https://raw.githubusercontent.com
 ### 2. Test the Flathub build and run its checks
 
 ```bash
-flatpak run org.flatpak.Builder --force-clean --sandbox --user --install --install-deps-from=flathub \
+flatpak run org.flatpak.Builder --force-clean --disable-cache --sandbox --user --install --install-deps-from=flathub \
   --compose-url-policy=full --mirror-screenshots-url=https://dl.flathub.org/media \
   --repo=flatpak/repo flatpak/build flatpak/flathub/io.github.NightfallAutomotive.Inkwell.yml
 flatpak run --command=flatpak-builder-lint org.flatpak.Builder manifest flatpak/flathub/io.github.NightfallAutomotive.Inkwell.yml
 flatpak run --command=flatpak-builder-lint org.flatpak.Builder repo flatpak/repo
 ```
 
-The build fetches the code from GitHub this time, so step 1 has to be done first. The two `--compose-url-policy` and `--mirror-screenshots-url` options copy the screenshots the way Flathub's own build does. Without them, the repo check reports `appstream-screenshots-not-mirrored-in-ostree` and `appstream-external-screenshot-url`. If the checks print any other errors, fix those before submitting.
+The build fetches the code from GitHub this time, so step 1 has to be done first. The two `--compose-url-policy` and `--mirror-screenshots-url` options copy the screenshots the way Flathub's own build does. `--disable-cache` makes sure that step runs even if you've built before. Without these options, the repo check reports `appstream-screenshots-not-mirrored-in-ostree` and `appstream-external-screenshot-url`. If the checks print any other errors, fix those before submitting.
 
 ### 3. Submit
 
