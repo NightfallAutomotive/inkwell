@@ -1,0 +1,37 @@
+id: io.github.NightfallAutomotive.Inkwell
+runtime: org.gnome.Platform
+runtime-version: '51'
+sdk: org.gnome.Sdk
+command: inkwell
+finish-args:
+  # Inkwell is a small local web server shown in a WebKit window. The network is
+  # needed for that, for pictures linked from the web, and for optional online use.
+  - --share=network
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  # Notes live in ~/Notes by default, and a vault can be any folder you choose.
+  - --filesystem=home
+modules:
+  - name: inkwell
+    buildsystem: simple
+    build-commands:
+      - install -Dm644 server.py /app/share/inkwell/server.py
+      - cp -r static /app/share/inkwell/static
+      - install -Dm644 docs/online.md /app/share/inkwell/docs/online.md
+      - install -Dm755 flatpak/inkwell-window.py /app/bin/inkwell
+      - install -Dm644 flatpak/${FLATPAK_ID}.desktop /app/share/applications/${FLATPAK_ID}.desktop
+      - install -Dm644 flatpak/${FLATPAK_ID}.metainfo.xml /app/share/metainfo/${FLATPAK_ID}.metainfo.xml
+      - install -Dm644 static/brand/skull.svg /app/share/icons/hicolor/scalable/apps/${FLATPAK_ID}.svg
+      - install -Dm644 static/brand/icon-256.png /app/share/icons/hicolor/256x256/apps/${FLATPAK_ID}.png
+      - install -Dm644 static/brand/icon-512.png /app/share/icons/hicolor/512x512/apps/${FLATPAK_ID}.png
+      - install -Dm644 -t /app/share/licenses/${FLATPAK_ID} LICENSE licenses/*
+    sources:
+      - type: git
+        url: https://github.com/NightfallAutomotive/inkwell.git
+        tag: v1.0.0
+        commit: a7f9d00ccb5b8fc0ff447417732abaf733ed1975
+        x-checker-data:
+          type: git
+          tag-pattern: ^v([\d.]+)$

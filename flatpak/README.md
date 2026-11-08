@@ -54,10 +54,55 @@ Copy `inkwell.flatpak` to the other computer and install it with `flatpak instal
 
 ## Publishing on Flathub
 
-To appear in GNOME Software for everyone, Inkwell has to be submitted to Flathub. That needs:
+Everything Flathub needs is in the repository: an MIT licence, the store listing with screenshots (`io.github.NightfallAutomotive.Inkwell.metainfo.xml`), and a build recipe pinned to the `v1.0.0` release (`flathub/io.github.NightfallAutomotive.Inkwell.yml`). These steps go through your own GitHub account.
 
-- **A real licence** in place of the placeholder in the metainfo file. The skull artwork's licence has to allow redistribution too.
-- **Screenshots** in the metainfo file.
-- **A tagged release** that the manifest builds from, instead of this local folder.
+### 1. Publish the code and the release tag
 
-See https://docs.flathub.org/docs/for-app-authors/submission for the process.
+```bash
+cd ~/Documents/GitHub/inkwell
+git push
+git push origin v1.0.0
+```
+
+Then make the repository public, because Flathub builds from public source. On GitHub, open **NightfallAutomotive/inkwell → Settings → General**, scroll to **Danger Zone**, choose **Change visibility → Public**.
+
+Check that a screenshot opens in your browser: https://raw.githubusercontent.com/NightfallAutomotive/inkwell/v1.0.0/flatpak/screenshots/editor-dark.png
+
+### 2. Test the Flathub build and run its checks
+
+```bash
+flatpak run org.flatpak.Builder --force-clean --sandbox --user --install --install-deps-from=flathub \
+  --repo=flatpak/repo flatpak/build flatpak/flathub/io.github.NightfallAutomotive.Inkwell.yml
+flatpak run --command=flatpak-builder-lint org.flatpak.Builder manifest flatpak/flathub/io.github.NightfallAutomotive.Inkwell.yml
+flatpak run --command=flatpak-builder-lint org.flatpak.Builder repo flatpak/repo
+```
+
+The build fetches the code from GitHub this time, so step 1 has to be done first. If the lint commands print errors, fix those before submitting.
+
+### 3. Submit
+
+1. Open https://github.com/flathub/flathub and click **Fork**. **Untick** "Copy the main branch only", because the submission goes on the `new-pr` branch.
+2. Add the recipe to your fork and push it:
+   ```bash
+   cd ~/Documents/GitHub
+   git clone --branch=new-pr https://github.com/NightfallAutomotive/flathub.git
+   cd flathub
+   git checkout -b add-inkwell
+   cp ../inkwell/flatpak/flathub/io.github.NightfallAutomotive.Inkwell.yml .
+   git add io.github.NightfallAutomotive.Inkwell.yml
+   git commit -m "Add io.github.NightfallAutomotive.Inkwell"
+   git push origin add-inkwell
+   ```
+3. On GitHub, open a pull request from `add-inkwell` into **flathub/flathub**, with **`new-pr`** as the base branch (not `master`). Title it `Add io.github.NightfallAutomotive.Inkwell`.
+
+### 4. Review
+
+A bot builds Inkwell and posts the result on the pull request. A volunteer reviewer then checks it, which can take from a few days to a few weeks. They may ask why Inkwell needs your home folder. The answer: notes live in a folder you choose, `~/Notes` by default, and Inkwell reads and writes plain Markdown files there.
+
+Once it's accepted, Flathub creates `flathub/io.github.NightfallAutomotive.Inkwell` and invites you to it. Sign in to flathub.org with GitHub to verify the app as yours. It then appears in GNOME Software for everyone.
+
+### Releasing updates later
+
+1. Add a `<release>` entry at the top of the metainfo file.
+2. Commit, tag (for example `git tag -a v1.1.0 -m "Inkwell 1.1.0"`), and push the commit and the tag.
+3. In the `flathub/io.github.NightfallAutomotive.Inkwell` repository, update `tag:` and `commit:` in the recipe and open a pull request. Flathub's checker bot often opens that pull request for you.
