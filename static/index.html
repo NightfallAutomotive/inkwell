@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Inkwell</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 3c5 6 9 11 9 16a9 9 0 0 1-18 0c0-5 4-10 9-16z' fill='%23e0a84f'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 3c5 6 9 11 9 16a9 9 0 0 1-18 0c0-5 4-10 9-16z' fill='%2388c0d0'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
@@ -28,6 +28,7 @@
       <button class="st active" data-tab="files">Files</button>
       <button class="st" data-tab="search">Search</button>
       <button class="st" data-tab="tags">Tags</button>
+      <button class="st" data-tab="bookmarks">Bookmarks</button>
     </div>
     <section class="pane" id="pane-files">
       <div class="pane-tools">
@@ -44,43 +45,21 @@
       <div id="vault-path" class="muted small"></div>
     </section>
     <section class="pane" id="pane-search" hidden>
-      <input id="search-input" type="search" placeholder="Search notes…  (tag:foo, path:bar)" autocomplete="off">
+      <div class="search-row"><input id="search-input" type="search" placeholder="Search notes…  (tag:foo, path:bar)" autocomplete="off"><button id="search-bm" title="Bookmark this search">☆</button></div>
       <div id="search-results"></div>
     </section>
     <section class="pane" id="pane-tags" hidden>
       <div id="tag-list"></div>
+    </section>
+    <section class="pane" id="pane-bookmarks" hidden>
+      <div id="bookmark-list"></div>
     </section>
   </aside>
   <div class="resizer" data-side="left"></div>
 
   <!-- main -->
   <main id="main">
-    <header id="note-head">
-      <button class="nav" id="btn-back" title="Back (Alt+←)">‹</button>
-      <button class="nav" id="btn-fwd" title="Forward (Alt+→)">›</button>
-      <div id="crumbs" class="muted"></div>
-      <div class="head-spacer"></div>
-      <span id="save-state" class="muted small"></span>
-      <div class="seg" id="mode-seg">
-        <button data-mode="edit" title="Edit (Ctrl+E)">Edit</button>
-        <button data-mode="split" title="Split (Ctrl+Shift+E)">Split</button>
-        <button data-mode="preview" title="Read (Ctrl+E)">Read</button>
-      </div>
-    </header>
-    <div id="doc" class="mode-split">
-      <div id="empty-state">
-        <div class="drop">✒</div>
-        <h2>No note open</h2>
-        <p><kbd>Ctrl</kbd>+<kbd>O</kbd> to open a note · <kbd>Alt</kbd>+<kbd>N</kbd> to create one · <kbd>Ctrl</kbd>+<kbd>P</kbd> for commands</p>
-      </div>
-      <div id="edit-wrap">
-        <input id="title" spellcheck="false" autocomplete="off">
-        <textarea id="editor" spellcheck="true" placeholder="Start writing…  [[ to link, # to tag"></textarea>
-      </div>
-      <div id="preview-wrap">
-        <article id="preview" class="md"></article>
-      </div>
-    </div>
+    <div id="panes"></div>
     <footer id="status">
       <span id="st-words"></span>
       <span id="st-links"></span>
@@ -137,13 +116,26 @@
   </form>
 </div>
 
+<div id="recovery" class="overlay" hidden>
+  <div class="recovery-box">
+    <div class="rec-head"><strong>File recovery</strong><span id="rec-path" class="muted small"></span><span class="grow"></span><label><input type="checkbox" id="rec-diff" checked> Show changes</label><button id="rec-close" title="Close (Esc)">✕</button></div>
+    <div class="rec-body"><div id="rec-list"></div><div id="rec-view"></div></div>
+    <div class="rec-foot"><span id="rec-info" class="muted small"></span><span class="grow"></span><button id="rec-copy">Copy text</button><button id="rec-restore" class="primary">Restore this version</button></div>
+  </div>
+</div>
+
 <div id="ctx" hidden></div>
-<div id="ac" hidden></div>
 <div id="hover" hidden></div>
 <div id="toasts"></div>
 
 <script src="vendor/marked.min.js"></script>
 <script src="vendor/purify.min.js"></script>
-<script src="app.js"></script>
+<script src="vendor/codemirror.min.js"></script>
+<script src="js/core.js"></script>
+<script src="js/props.js"></script>
+<script src="js/editor.js"></script>
+<script src="js/workspace.js"></script>
+<script src="js/sidebar.js"></script>
+<script src="js/features.js"></script>
 </body>
 </html>

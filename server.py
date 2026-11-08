@@ -32,6 +32,11 @@ TAG_RE = re.compile(r"(?:^|(?<=\s))#([A-Za-z0-9_\-/]*[A-Za-z_\-/][A-Za-z0-9_\-/]
 FENCE_RE = re.compile(r"^(```|~~~).*?^\1", re.S | re.M)
 INLINE_CODE_RE = re.compile(r"`[^`\n]*`")
 FRONTMATTER_RE = re.compile(r"\A---\n(.*?)\n---\n", re.S)
+META = ".inkwell"                  # per-vault app data (bookmarks, snapshots)
+SNAP_INTERVAL = 5 * 60             # at most one automatic snapshot per note per 5 minutes
+SNAP_KEEP_DAYS = 14
+SNAP_MAX = 100                     # per note
+CONFIG_NAMES = {"bookmarks"}
 
 
 # ---------------------------------------------------------------- helpers
@@ -165,6 +170,64 @@ def search(q: str, limit=200):
     return results[:limit]
 
 
+# ---------------------------------------------------------------- snapshots
+def snap_dir(rel: str) -> Path:
+    return VAULT / META / "snapshots" / rel
+
+
+def snapshot(p: Path, text=None, force=False):
+    """Save a copy of note `p` (its current content, or `text`) for file recovery.
+
+    Skipped when the newest snapshot is under SNAP_INTERVAL old (unless forced) or identical.
+    """
+    try:
+        if text is None:
+            if not p.is_file():
+                return
+            text = p.read_text(encoding="utf-8", errors="replace")
+        d = snap_dir(rel_of(p))
+        snaps = sorted(d.glob("*.md")) if d.is_dir() else []
+        if snaps:
+            newest = snaps[-1]
+            if not force and time.time() - newest.stat().st_mtime < SNAP_INTERVAL:
+                return
+            if newest.read_text(encoding="utf-8", errors="replace") == text:
+                return
+        if not text.strip():
+            return
+        d.mkdir(parents=True, exist_ok=True)
+        name = time.strftime("%Y%m%d-%H%M%S")
+        target, i = d / f"{name}.md", 1
+        while target.exists():
+            target, i = d / f"{name}-{i}.md", i + 1
+        target.write_text(text, encoding="utf-8")
+        snaps.append(target)
+        cutoff = time.time() - SNAP_KEEP_DAYS * 86400
+        for old in snaps[:-1]:
+            if old.stat().st_mtime < cutoff or len(snaps) > SNAP_MAX:
+                old.unlink(missing_ok=True)
+                snaps.remove(old)
+    except OSError:
+        pass  # recovery is best-effort; never block a save
+
+
+def list_snapshots(rel: str):
+    d = snap_dir(rel)
+    out = []
+    if d.is_dir():
+        for f in sorted(d.glob("*.md"), reverse=True):
+            st = f.stat()
+            out.append({"id": f.stem, "time": st.st_mtime, "size": st.st_size})
+    return out
+
+
+def move_snapshots(src_rel: str, dst_rel: str):
+    s, d = snap_dir(src_rel), snap_dir(dst_rel)
+    if s.exists() and not d.exists():
+        d.parent.mkdir(parents=True, exist_ok=True)
+        os.rename(s, d)
+
+
 def rewrite_links(old_name: str, new_name: str):
     """Update [[old_name...]] references across the vault after a rename."""
     pat = re.compile(r"(!?\[\[)" + re.escape(old_name) + r"((?:#[^\[\]|\n]*)?(?:\|[^\[\]\n]*)?\]\])", re.I)
@@ -177,6 +240,7 @@ def rewrite_links(old_name: str, new_name: str):
             continue
         new_text, n = pat.subn(lambda m: m.group(1) + new_name + m.group(2), text)
         if n:
+            snapshot(p, text)
             p.write_text(new_text, encoding="utf-8")
             changed += 1
     return changed
@@ -284,6 +348,8 @@ class Handler(BaseHTTPRequestHandler):
                     base = body.get("baseMtime")
                     if base and p.exists() and abs(p.stat().st_mtime - base) > 0.001 and not body.get("force"):
                         return self.send_json({"error": "conflict", "mtime": p.stat().st_mtime}, 409)
+                    if p.is_file():
+                        snapshot(p, force=bool(body.get("snapshot")))
                     p.parent.mkdir(parents=True, exist_ok=True)
                     tmp = p.with_name(f".{p.name}.inkwell-tmp")
                     tmp.write_text(body.get("content", ""), encoding="utf-8")
@@ -310,12 +376,48 @@ class Handler(BaseHTTPRequestHandler):
             with WRITE_LOCK:
                 dst.parent.mkdir(parents=True, exist_ok=True)
                 os.rename(src, dst)
+                move_snapshots(body["from"].strip("/"), rel_of(dst))
                 updated = 0
                 if body.get("updateLinks", True) and dst.is_file():
                     old, new = link_name(body["from"]), link_name(rel_of(dst))
                     if old != new:
                         updated = rewrite_links(old, new)
             return self.send_json({"ok": True, "path": rel_of(dst), "linksUpdated": updated})
+
+        if ep == "relink" and method == "POST":
+            # point [[links]] at note `from` to note `to` instead (used by "merge notes")
+            body = self.body_json()
+            old, new = link_name(body["from"]), link_name(body["to"])
+            with WRITE_LOCK:
+                updated = rewrite_links(old, new) if old != new else 0
+            return self.send_json({"ok": True, "linksUpdated": updated})
+
+        if ep == "snapshots" and method == "GET":
+            return self.send_json(list_snapshots(rel_of(safe_path(qs.get("path", "")))))
+
+        if ep == "snapshot" and method == "GET":
+            rel = rel_of(safe_path(qs.get("path", "")))
+            sid = qs.get("id", "")
+            if not re.fullmatch(r"[0-9]{8}-[0-9]{6}(-[0-9]+)?", sid):
+                raise PermissionError("bad snapshot id")
+            f = snap_dir(rel) / f"{sid}.md"
+            return self.send_json({"id": sid, "time": f.stat().st_mtime, "content": f.read_text(encoding="utf-8", errors="replace")})
+
+        if ep.startswith("config/"):
+            name = ep[7:]
+            if name not in CONFIG_NAMES:
+                return self.send_json({"error": "unknown config"}, 404)
+            f = VAULT / META / f"{name}.json"
+            if method == "GET":
+                return self.send_json(json.loads(f.read_text(encoding="utf-8")) if f.is_file() else None)
+            if method == "PUT":
+                data = self.body_json()
+                with WRITE_LOCK:
+                    f.parent.mkdir(parents=True, exist_ok=True)
+                    tmp = f.with_name(f".{f.name}.tmp")
+                    tmp.write_text(json.dumps(data, indent=2), encoding="utf-8")
+                    os.replace(tmp, f)
+                return self.send_json({"ok": True})
 
         if ep == "upload" and method == "POST":
             # raw bytes body, ?path=attachments/name.png
@@ -363,11 +465,13 @@ Your notes are plain Markdown files in this folder:
 - Link notes with double brackets: [[Getting started]]
 - Add tags like `#ideas` anywhere in a note
 - `Alt+N` new note, `Ctrl+P` command palette, `Ctrl+O` quick switcher
-- `Ctrl+E` toggles edit / preview, `Ctrl+Shift+E` split view
+- Type `/` in a note for formatting and commands
+- `Ctrl+E` toggles reading view, `Ctrl+Shift+E` switches live preview / source
+- `Alt+T` new tab, `Alt+\\` split right, `Ctrl+click` a link to open it in a new tab
 - `Ctrl+G` opens the graph
 - `Alt+D` opens today's daily note
 
-- [ ] Click checkboxes in preview to tick them off
+- [ ] Click checkboxes to tick them off
 - [x] Install Inkwell
 """
 
