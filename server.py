@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Inkwell — a local, folder-based Markdown notes app.
 
-Usage:  python3 server.py [VAULT_DIR] [--port 8765] [--no-browser]
+Usage:  python3 server.py [VAULT_DIR] [--port 8473] [--no-browser]
 Notes are plain .md files inside VAULT_DIR (default ~/Notes).
 Binds to 127.0.0.1 only.
 """
@@ -262,6 +262,9 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_json({"error": f"{type(e).__name__}: {e}"}, 500)
 
     def api(self, method, ep, qs):
+        if ep == "ping" and method == "GET":
+            return self.send_json({"app": "inkwell", "vault": str(VAULT)})
+
         if ep == "index" and method == "GET":
             return self.send_json(build_index())
 
@@ -379,11 +382,20 @@ it is saved to `attachments/`.
 """
 
 
+def is_inkwell(port: int) -> bool:
+    import urllib.request
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/ping", timeout=1.5) as r:
+            return json.loads(r.read() or b"{}").get("app") == "inkwell"
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def main():
     global VAULT
     ap = argparse.ArgumentParser(description="Inkwell local notes")
     ap.add_argument("vault", nargs="?", default=os.environ.get("INKWELL_VAULT", str(Path.home() / "Notes")))
-    ap.add_argument("--port", type=int, default=int(os.environ.get("INKWELL_PORT", 8765)))
+    ap.add_argument("--port", type=int, default=int(os.environ.get("INKWELL_PORT", 8473)))
     ap.add_argument("--no-browser", action="store_true")
     args = ap.parse_args()
 
@@ -394,15 +406,23 @@ def main():
         (VAULT / "Welcome.md").write_text(WELCOME.format(vault=VAULT), encoding="utf-8")
         (VAULT / "Getting started.md").write_text(GETTING_STARTED, encoding="utf-8")
 
-    try:
-        srv = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
-    except OSError as e:
-        url = f"http://127.0.0.1:{args.port}/"
-        print(f"Port {args.port} busy ({e}); Inkwell may already be running at {url}")
-        if not args.no_browser:
-            webbrowser.open(url)
-        sys.exit(0)
-    url = f"http://127.0.0.1:{args.port}/"
+    srv = None
+    for port in range(args.port, args.port + 20):
+        try:
+            srv = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+            break
+        except OSError:
+            # Port taken: if it's Inkwell already, just open it; otherwise try the next port.
+            if is_inkwell(port):
+                url = f"http://127.0.0.1:{port}/"
+                print(f"Inkwell already running at {url}")
+                if not args.no_browser:
+                    webbrowser.open(url)
+                sys.exit(0)
+            print(f"Port {port} is used by another app, trying {port + 1}")
+    if srv is None:
+        sys.exit(f"No free port in {args.port}-{args.port + 19}")
+    url = f"http://127.0.0.1:{port}/"
     print(f"Inkwell serving vault {VAULT}\n  → {url}   (Ctrl+C to stop)")
     if not args.no_browser:
         threading.Timer(0.6, lambda: webbrowser.open(url)).start()

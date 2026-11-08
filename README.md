@@ -13,7 +13,7 @@ A personal Markdown notes app that runs locally. Notes are plain `.md` files in 
 python3 server.py --port 9000 --no-browser
 ```
 
-Then open <http://127.0.0.1:8765/>. Running it again while it's already up just opens the tab.
+Then open <http://127.0.0.1:8473/>. Running it again while it's already up just opens the tab.
 
 App-menu entry (optional): `cp inkwell.desktop ~/.local/share/applications/`
 
