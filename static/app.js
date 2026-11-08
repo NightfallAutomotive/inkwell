@@ -1379,7 +1379,7 @@ class ForceGraph {
   colors() {
     const cs = getComputedStyle(document.documentElement);
     const g = (v) => cs.getPropertyValue(v).trim();
-    return { bg: g('--bg'), node: g('--fg3'), accent: g('--accent'), line: g('--line'), label: g('--fg2'), unres: g('--unres'), tag: '#5fa89c' };
+    return { bg: g('--bg'), node: g('--fg3'), accent: g('--accent'), line: g('--line'), label: g('--fg2'), unres: g('--unres'), tag: g('--green') };
   }
   radius(n) { return (n.kind === 'tag' ? 3 : 3.2) + Math.sqrt(n.deg || 0) * 1.6; }
   draw() {

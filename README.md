@@ -34,7 +34,7 @@ App-menu entry (optional): `cp inkwell.desktop ~/.local/share/applications/`
 - Pasting or dropping an image saves it to `attachments/`
 - Autosave, plus a warning if the file changed on disk while you were editing it
 - Deletes go to `<vault>/.trash/`
-- Light and dark themes; sidebars can be resized
+- Nord light and dark themes; sidebars can be resized
 
 ## Shortcuts
 
