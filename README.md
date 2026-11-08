@@ -1,4 +1,9 @@
-# Inkwell
+<h1>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="static/brand/wordmark-dark.svg">
+    <img src="static/brand/wordmark-light.svg" alt="Inkwell" width="300">
+  </picture>
+</h1>
 
 A personal Markdown notes app that runs locally. Notes are plain `.md` files in a folder (the vault), so they work with git, Syncthing or any other editor.
 

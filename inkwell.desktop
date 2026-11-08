@@ -4,6 +4,6 @@ Type=Application
 Name=Inkwell
 Comment=Local Markdown notes
 Exec=/home/Nightfall/Documents/GitHub/inkwell/inkwell.sh
-Icon=accessories-text-editor
+Icon=/home/Nightfall/Documents/GitHub/inkwell/static/brand/skull.svg
 Terminal=false
 Categories=Office;Utility;

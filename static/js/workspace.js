@@ -137,7 +137,7 @@ class Pane {
         <button class="hbtn more" title="More options">⋯</button>
       </header>
       <div class="doc mode-live empty">
-        <div class="empty-state"><div class="drop">✒</div><h2>No note open</h2>
+        <div class="empty-state"><img class="wordmark wm-dark" src="brand/wordmark-dark.svg" alt="Inkwell"><img class="wordmark wm-light" src="brand/wordmark-light.svg" alt="Inkwell"><h2>No note open</h2>
           <p><kbd>Ctrl</kbd>+<kbd>O</kbd> to open a note · <kbd>Alt</kbd>+<kbd>N</kbd> to create one · <kbd>Ctrl</kbd>+<kbd>P</kbd> for commands</p></div>
         <div class="edit-scroll"><div class="sheet"><input class="title" spellcheck="false" autocomplete="off"><div class="props" hidden></div><div class="cm-host"></div></div></div>
         <div class="read-scroll"><div class="sheet"><div class="inline-title"></div><div class="props read-props" hidden></div><article class="preview md"></article></div></div>
