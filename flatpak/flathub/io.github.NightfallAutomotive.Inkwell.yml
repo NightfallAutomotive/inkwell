@@ -31,7 +31,7 @@ modules:
       - type: git
         url: https://github.com/NightfallAutomotive/inkwell.git
         tag: v1.0.0
-        commit: a7f9d00ccb5b8fc0ff447417732abaf733ed1975
+        commit: 33dae34ac2d09963e25218769d4a941655103c66
         x-checker-data:
           type: git
           tag-pattern: ^v([\d.]+)$
