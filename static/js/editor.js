@@ -131,6 +131,7 @@ const inkHighlight = HighlightStyle.define([
 ]);
 
 // ------------------------------------------------------------------ helpers
+function selTouchesAny(state, from, to) { return selTouches(state, from, to); }
 function selTouches(state, from, to) {
   for (const r of state.selection.ranges) if (r.from <= to && r.to >= from) return true;
   return false;
@@ -209,6 +210,32 @@ function revealOnMouseDown(dom, view) {
     view.focus();
   });
 }
+class HtmlW extends WidgetType {
+  constructor(html, from, theme) { super(); this.html = html; this.from = from; this.theme = theme; }
+  eq(o) { return o.html === this.html && o.from === this.from && o.theme === this.theme; }
+  get estimatedHeight() { return 120; }
+  toDOM(view) {
+    const wrap = document.createElement('div');
+    wrap.className = 'cm-lp-html';
+    wrap.appendChild(makeHtmlFrame(this.html, view.state.facet(notePath)));
+    const btn = document.createElement('button');
+    btn.className = 'cm-lp-html-edit'; btn.textContent = '‹/› Edit HTML'; btn.title = 'Show the HTML source';
+    btn.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      view.dispatch({ selection: { anchor: view.posAtDOM(wrap) } });
+      view.focus();
+    });
+    wrap.appendChild(btn);
+    return wrap;
+  }
+  ignoreEvent() { return true; }
+}
+const regionCache = new WeakMap();
+function docHtmlRegions(doc) {
+  let r = regionCache.get(doc);
+  if (!r) { r = htmlRegions(doc.toString()); regionCache.set(doc, r); }
+  return r;
+}
 class BlockW extends WidgetType {
   /** kind: 'table' | 'embed' | 'image'. `text` is the Markdown source of the block. */
   constructor(kind, text, from) { super(); this.kind = kind; this.text = text; this.from = from; }
@@ -228,6 +255,7 @@ class BlockW extends WidgetType {
 
 // ------------------------------------------------------------------ live preview
 const hideMark = Decoration.replace({});
+const INLINE_STYLE_TAGS = new Set('abbr b cite code del dfn em i ins kbd mark q s samp small span strong sub sup u var'.split(' '));
 
 function buildLive(view) {
   const { state } = view;
@@ -240,6 +268,7 @@ function buildLive(view) {
   const add = (deco, from, to = from) => { const k = from + ':' + to + ':' + (deco.spec.class || deco.spec.widget?.constructor.name || 'r'); if (seen.has(k)) return; seen.add(k); out.push(deco.range(from, to)); };
   const lineDeco = (pos, cls) => add(Decoration.line({ class: cls }), doc.lineAt(pos).from);
   const hide = (f, t) => { if (t > f) add(hideMark, f, t); };
+  const inlineTags = [];
 
   for (const { from, to } of view.visibleRanges) {
     syntaxTree(state).iterate({
@@ -358,6 +387,7 @@ function buildLive(view) {
             }
             return;
           }
+          case 'HTMLTag': inlineTags.push({ from: n.from, to: n.to }); return;
           case 'HorizontalRule': if (!lineOn(n.from)) { lineDeco(n.from, 'cm-lp-hr'); hide(n.from, n.to); } return;
           case 'FencedCode': {
             const firstLine = doc.lineAt(n.from), lastLine = doc.lineAt(n.to);
@@ -380,6 +410,26 @@ function buildLive(view) {
       },
     });
   }
+  // simple inline HTML (<kbd>, <b>, <span style>…): hide the tags, style the text between them
+  const open = [];
+  for (const t of inlineTags) {
+    const src = doc.sliceString(t.from, t.to);
+    const m = /^<(\/?)([a-zA-Z][\w-]*)([^>]*)>$/.exec(src);
+    if (!m) continue;
+    const name = m[2].toLowerCase();
+    if (name === 'br' && !lineOn(t.from)) { add(Decoration.replace({ widget: new TextW('', 'cm-lp-br') }), t.from, t.to); continue; }
+    if (!INLINE_STYLE_TAGS.has(name)) continue;
+    if (!m[1]) { open.push({ name, attrs: m[3], from: t.from, to: t.to }); continue; }
+    const i = open.map((o) => o.name).lastIndexOf(name);
+    if (i < 0) continue;
+    const o = open.splice(i)[0];
+    if (doc.lineAt(o.from).number !== doc.lineAt(t.from).number || lineOn(t.from) || t.from <= o.to) continue;
+    hide(o.from, o.to); hide(t.from, t.to);
+    const attrs = {};
+    const st = /\bstyle\s*=\s*("([^"]*)"|'([^']*)')/i.exec(o.attrs);
+    if (st) { const css = (st[2] ?? st[3]).replace(/url\s*\(|expression\s*\(|@import/gi, ''); if (css.trim()) attrs.style = css; }
+    add(Decoration.mark({ tagName: name, attributes: attrs, class: 'cm-lp-inline-html' }), o.to, t.from);
+  }
   return Decoration.set(out, true);
 }
 
@@ -393,11 +443,30 @@ const livePlugin = ViewPlugin.fromClass(class {
 }, { decorations: (v) => v.decorations });
 
 // Block-level replacements (frontmatter, tables, whole-line embeds) have to come from a state field.
+// Whether the editor has focus, kept in state so block decorations can depend on it:
+// an unfocused note renders fully even if its cursor sits inside a table or HTML block.
+const focusFx = StateEffect.define();
+const focusState = StateField.define({
+  create: () => false,
+  update(v, tr) { for (const e of tr.effects) if (e.is(focusFx)) v = e.value; return v; },
+});
+const focusTracker = EditorView.focusChangeEffect.of((state, focusing) => focusFx.of(focusing));
+
 function buildBlocks(state) {
+  const focused = state.field(focusState, false);
+  const selTouches = (st, f, t) => focused && selTouchesAny(st, f, t);
   const tree = ensureSyntaxTree(state, state.doc.length, 40) || syntaxTree(state);
   const doc = state.doc, out = [], path = state.facet(notePath);
+  const regions = docHtmlRegions(doc);
+  const theme = document.documentElement.dataset.theme;
+  for (const r of regions) {
+    if (!selTouches(state, r.from, r.to)) out.push(Decoration.replace({ block: true, widget: new HtmlW(r.html, r.from, theme) }).range(r.from, r.to));
+    else for (let pos = r.from; pos <= r.to;) { const l = doc.lineAt(pos); out.push(Decoration.line({ class: 'cm-lp-html-src' }).range(l.from)); pos = l.to + 1; }
+  }
+  const inRegion = (pos) => regions.some((r) => pos >= r.from && pos <= r.to);
   tree.iterate({
     enter(n) {
+      if (n.name !== 'Document' && inRegion(n.from)) return false;
       if (n.name === 'Frontmatter') { out.push(Decoration.replace({ block: true }).range(n.from, n.to)); return false; }
       if (n.name === 'Table') {
         const f = doc.lineAt(n.from), t = doc.lineAt(n.to);
@@ -424,7 +493,7 @@ function buildBlocks(state) {
 const liveBlocks = StateField.define({
   create: buildBlocks,
   update(deco, tr) {
-    if (tr.docChanged || tr.selection || syntaxTree(tr.startState) !== syntaxTree(tr.state) || tr.effects.some((e) => e.is(refreshFx) || e.is(pathComp.reconfigure))) return buildBlocks(tr.state);
+    if (tr.docChanged || tr.selection || syntaxTree(tr.startState) !== syntaxTree(tr.state) || tr.effects.some((e) => e.is(refreshFx) || e.is(focusFx) || e.is(pathComp.reconfigure))) return buildBlocks(tr.state);
     return deco;
   },
   provide: (f) => [EditorView.decorations.from(f)],
@@ -437,7 +506,7 @@ const fmAtomic = EditorView.atomicRanges.of((view) => {
   return Decoration.set([hideMark.range(0, end)]);
 });
 
-const liveExt = [livePlugin, liveBlocks, fmAtomic, EditorView.editorAttributes.of({ class: 'cm-live' })];
+const liveExt = [focusState, focusTracker, livePlugin, liveBlocks, fmAtomic, EditorView.editorAttributes.of({ class: 'cm-live' })];
 
 // ------------------------------------------------------------------ editing commands
 function wrapSel(view, mark) {

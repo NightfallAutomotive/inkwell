@@ -31,6 +31,7 @@ WIKILINK_RE = re.compile(r"!?\[\[([^\[\]|#\n]*)(#[^\[\]|\n]*)?(\|[^\[\]\n]*)?\]\
 TAG_RE = re.compile(r"(?:^|(?<=\s))#([A-Za-z0-9_\-/]*[A-Za-z_\-/][A-Za-z0-9_\-/]*)")
 FENCE_RE = re.compile(r"^(```|~~~).*?^\1", re.S | re.M)
 INLINE_CODE_RE = re.compile(r"`[^`\n]*`")
+HTML_CODE_RE = re.compile(r"<(style|script)\b.*?</\1\s*>|<!--.*?-->|<[a-zA-Z/][^>\n]*>", re.S | re.I)
 FRONTMATTER_RE = re.compile(r"\A---\n(.*?)\n---\n", re.S)
 META = ".inkwell"                  # per-vault app data (bookmarks, snapshots)
 SNAP_INTERVAL = 5 * 60             # at most one automatic snapshot per note per 5 minutes
@@ -55,6 +56,7 @@ def rel_of(p: Path) -> str:
 
 def strip_code(text: str) -> str:
     text = FENCE_RE.sub("", text)
+    text = HTML_CODE_RE.sub(" ", text)  # CSS colours like #5e81ac aren't tags
     return INLINE_CODE_RE.sub("", text)
 
 

@@ -233,6 +233,16 @@ mark { background: var(--accent-soft); color: var(--fg); border-radius: 2px; pad
 .cm-live .cm-lp-block > :first-child { margin-top: 0; } .cm-live .cm-lp-block > :last-child { margin-bottom: 0; }
 .cm-live .cm-lp-block.cm-lp-table:hover { outline: 1px dashed var(--line); outline-offset: 3px; border-radius: 4px; }
 
+/* raw HTML blocks render in sandboxed frames */
+.html-frame { display: block; width: 100%; border: 0; background: transparent; margin: .3em 0; }
+.cm-live .cm-lp-html { position: relative; white-space: normal; }
+.cm-live .cm-lp-html:hover { outline: 1px dashed var(--line); outline-offset: 3px; border-radius: 4px; }
+.cm-lp-html-edit { position: absolute; top: 4px; right: 4px; font: 11px var(--sans); border: 1px solid var(--line); background: var(--bg2); color: var(--fg2); border-radius: 5px; padding: 2px 8px; opacity: 0; transition: opacity .1s; }
+.cm-lp-html:hover .cm-lp-html-edit { opacity: 1; }
+.cm-lp-html-edit:hover { color: var(--fg); border-color: var(--accent); }
+.cm-live .cm-lp-html-src { font: 14px/1.6 var(--mono); }
+.cm-live .cm-lp-html-src * { font-size: inherit; }
+
 /* properties */
 .props { margin: 4px 0 16px; padding-bottom: 10px; border-bottom: 1px solid var(--line); font: 13.5px var(--sans); }
 .props-head { color: var(--fg3); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; cursor: pointer; user-select: none; padding: 4px 0; display: flex; align-items: center; gap: 6px; }

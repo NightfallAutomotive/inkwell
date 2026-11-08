@@ -98,7 +98,7 @@ function linkText(path) {
 
 const FM_RE = /^---\n([\s\S]*?)\n?(?:---|\.\.\.)[ \t]*(?:\n|$)/;
 function stripCode(text) {
-  return text.replace(/^(```|~~~)[\s\S]*?^\1/gm, '').replace(/`[^`\n]*`/g, '');
+  return text.replace(/^(```|~~~)[\s\S]*?^\1/gm, '').replace(/<(style|script)\b[\s\S]*?<\/\1\s*>|<!--[\s\S]*?-->|<[a-zA-Z/][^>\n]*>/gi, ' ').replace(/`[^`\n]*`/g, '');
 }
 const WL_RE = /!?\[\[([^\[\]|#\n]*)(#[^\[\]|\n]*)?(\|[^\[\]\n]*)?\]\]/g;
 const TAG_RE = /(?:^|\s)#([A-Za-z0-9_\-\/]*[A-Za-z_\-\/][A-Za-z0-9_\-\/]*)/g;
@@ -192,14 +192,104 @@ marked.use({
 function renderMarkdown(src, from, depth = 0) {
   const m = src.match(FM_RE);
   if (m) src = src.slice(m[0].length);
+  // HTML blocks become sandboxed frames; leave a placeholder for each
+  const frames = [];
+  for (const r of htmlRegions(src).reverse()) {
+    frames.unshift(r.html);
+    src = src.slice(0, r.from) + `\n\n<div data-html-frame="${r.from}"></div>\n\n` + src.slice(r.to);
+  }
   const prev = RCTX; RCTX = { from, depth };
   let html;
   try { html = marked.parse(src); } finally { RCTX = prev; }
   const root = document.createElement('div');
   root.innerHTML = DOMPurify.sanitize(html, { ADD_ATTR: ['target'] });
+  $$('[data-html-frame]', root).forEach((ph, i) => { if (frames[i] != null) ph.replaceWith(makeHtmlFrame(frames[i], from)); });
   postProcess(root, from, depth);
   return root;
 }
+
+// ------------------------------------------------------------------ HTML blocks
+const INLINE_TAGS = new Set('a abbr b bdi bdo br cite code data del dfn em i img input ins kbd label mark q s samp small span strong sub sup time u var wbr'.split(' '));
+const VOID_TAGS = new Set('area base br col embed hr img input link meta source track wbr'.split(' '));
+
+/** Find runs of raw HTML in a note (outside code fences and frontmatter).
+ *  A run starts at a line beginning with a block-level tag, comment or doctype and
+ *  ends where that element closes — blank lines inside it are fine. Adjacent runs
+ *  separated only by blank lines are merged, so a <style> applies to the markup after it. */
+function htmlRegions(text) {
+  const out = [];
+  const lines = text.split('\n');
+  const starts = []; let off = 0;
+  for (const l of lines) { starts.push(off); off += l.length + 1; }
+  let i = 0;
+  const fm = text.match(FM_RE);
+  if (fm) while (i < lines.length && starts[i] < fm[0].length) i++;
+  let fence = null;
+  const endOf = (j) => starts[j] + lines[j].length;
+  while (i < lines.length) {
+    const line = lines[i];
+    const f = line.match(/^\s{0,3}(`{3,}|~{3,})/);
+    if (fence) { if (f && f[1][0] === fence[0] && f[1].length >= fence.length) fence = null; i++; continue; }
+    if (f) { fence = f[1]; i++; continue; }
+    const m = /^ {0,3}(?:(<!--)|(<!doctype\b)|<([a-zA-Z][\w-]*)(?=[\s>\/]|$))/i.exec(line);
+    const tag = m && m[3] && m[3].toLowerCase();
+    if (!m || (tag && INLINE_TAGS.has(tag))) { i++; continue; }
+    let j = i;
+    if (m[1]) { while (j < lines.length && !lines[j].includes('-->')) j++; }
+    else if (m[2]) { j = lines.length - 1; for (let k = i; k < lines.length; k++) if (/<\/html\s*>/i.test(lines[k])) { j = k; break; } }
+    else if (!VOID_TAGS.has(tag) && !new RegExp(`^\\s*<${tag}\\b[^>]*/>\\s*$`, 'i').test(line)) {
+      const open = new RegExp(`<${tag}(?=[\\s>/])[^>]*?(/?)>`, 'gi'), close = new RegExp(`</${tag}\\s*>`, 'gi');
+      let depth = 0, closed = false;
+      for (let k = i; k < lines.length; k++) {
+        for (const o of lines[k].matchAll(open)) if (!o[1]) depth++;
+        depth -= (lines[k].match(close) || []).length;
+        if (depth <= 0) { j = k; closed = true; break; }
+      }
+      if (!closed) { j = i; while (j + 1 < lines.length && lines[j + 1].trim()) j++; } // unclosed: stop at the next blank line
+    }
+    j = Math.min(j, lines.length - 1);
+    const prevR = out[out.length - 1];
+    const gapBlank = prevR && lines.slice(prevR.lastLine + 1, i).every((l) => !l.trim());
+    if (prevR && gapBlank) { prevR.to = endOf(j); prevR.lastLine = j; }
+    else out.push({ from: starts[i], to: endOf(j), lastLine: j });
+    i = j + 1;
+  }
+  for (const r of out) r.html = text.slice(r.from, r.to);
+  return out;
+}
+
+/** Build the srcdoc for an HTML block: the user's markup plus a <base> so relative links
+ *  and images resolve in the vault, and a tiny script that reports the content height. */
+function htmlFrameDoc(html, from, id) {
+  const baseHref = location.origin + vaultUrl(dirOf(from) ? dirOf(from) + '/' : '').replace(/\/?$/, '/');
+  const cs = getComputedStyle(document.documentElement);
+  const head = `<meta charset="utf-8"><base href="${esc(baseHref)}" target="_blank">`
+    + `<style>html{color-scheme:${document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light'}}body{margin:0;padding:1px 0;background:transparent;color:${cs.getPropertyValue('--fg').trim()};font:16px/1.6 ${cs.getPropertyValue('--sans').trim()};overflow-wrap:break-word}a{color:${cs.getPropertyValue('--link').trim()}}img{max-width:100%}</style>`
+    + `<script>(()=>{let last=0;const post=()=>{const h=Math.ceil(document.documentElement.getBoundingClientRect().height);if(Math.abs(h-last)>1){last=h;parent.postMessage({inkwellFrame:${JSON.stringify(id)},h},'*');}};addEventListener('load',post);new ResizeObserver(post).observe(document.documentElement);post();})()<\/script>`;
+  if (/<html[\s>]/i.test(html)) {
+    return /<head[^>]*>/i.test(html) ? html.replace(/<head[^>]*>/i, (h) => h + head) : html.replace(/<html[^>]*>/i, (h) => h + '<head>' + head + '</head>');
+  }
+  return `<!doctype html><html><head>${head}</head><body>${html}</body></html>`;
+}
+let frameSeq = 0;
+function makeHtmlFrame(html, from) {
+  const id = 'f' + (++frameSeq);
+  const f = document.createElement('iframe');
+  f.className = 'html-frame';
+  f.dataset.fid = id;
+  // no allow-same-origin: scripts run, but can't touch Inkwell or your notes
+  f.setAttribute('sandbox', 'allow-scripts allow-popups allow-popups-to-escape-sandbox allow-forms allow-modals');
+  f.setAttribute('loading', 'lazy');
+  f.style.height = '40px';
+  f.srcdoc = htmlFrameDoc(html, from, id);
+  return f;
+}
+addEventListener('message', (e) => {
+  const d = e.data;
+  if (!d || typeof d.inkwellFrame !== 'string' || typeof d.h !== 'number') return;
+  const f = document.querySelector(`iframe.html-frame[data-fid="${CSS.escape(d.inkwellFrame)}"]`);
+  if (f && f.contentWindow === e.source) f.style.height = Math.max(16, Math.min(d.h, 3000)) + 'px';
+});
 
 function postProcess(root, from, depth) {
   const d = dirOf(from);

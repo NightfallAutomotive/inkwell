@@ -428,6 +428,7 @@ function toggleTheme() {
   const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   document.documentElement.dataset.theme = t; store.set('theme', t);
   graph.view?.draw(); localGraph.view?.draw();
+  for (const p of W.panes) { p.view.dispatch({ effects: refreshFx.of(null) }); if (p.active?.mode === 'read') p.renderRead(); }
 }
 // resizers
 for (const r of $$('.resizer')) {
