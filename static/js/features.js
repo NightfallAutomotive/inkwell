@@ -577,7 +577,7 @@ async function checkServer() {
   await loadBookmarks();
   const fromHash = decodeURI(location.hash.replace(/^#\/?/, ''));
   const hasLayout = !!store.get('workspace', null)?.panes?.length;
-  const start = [fromHash, hasLayout ? null : store.get('last', null), hasLayout ? null : 'Welcome.md'].find((p) => p && S.noteByPath.has(p));
+  const start = [fromHash, hasLayout ? null : store.get('last', null), hasLayout ? null : 'Getting started.md'].find((p) => p && S.noteByPath.has(p));
   await restoreLayout(start);
   setInterval(() => { if (!document.hidden) refreshIndex({ quiet: true }); }, 6000);
   addEventListener('focus', () => refreshIndex({ quiet: true }));

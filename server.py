@@ -667,33 +667,15 @@ class Handler(BaseHTTPRequestHandler):
         self.route("DELETE")
 
 
-WELCOME = """# Welcome to Inkwell
+GETTING_STARTED = """# Getting started
 
 Your notes are plain Markdown files in this folder:
 
 `{vault}`
 
-Read the [[Inkwell Guide]] for a full how-to. It's also under **⚙ Settings → Open the guide**.
+New here? The [[Inkwell Guide]] shows how to do everything, from tick boxes to tabs and using Inkwell on your phone. It's also under **⚙ Settings → Open the guide**.
 
-## Things to try
-- Link notes with double brackets: [[Getting started]]
-- Add tags like `#ideas` anywhere in a note
-- `Alt+N` new note, `Ctrl+P` command palette, `Ctrl+O` quick switcher
-- Type `/` in a note for formatting and commands
-- `Ctrl+E` toggles reading view, `Ctrl+Shift+E` switches live preview / source
-- `Alt+T` new tab, `Alt+\\` split right, `Ctrl+click` a link to open it in a new tab
-- `Ctrl+G` opens the graph
-- `Alt+D` opens today's daily note
-
-- [ ] Click checkboxes to tick them off
-- [x] Install Inkwell
-"""
-
-GETTING_STARTED = """# Getting started
-
-This note is linked from [[Welcome]]. Check the **Backlinks** panel on the right.
-
-New here? The [[Inkwell Guide]] shows how to do everything, from tick boxes to tabs and using Inkwell on your phone.
+The guide links back to this note, so the **Backlinks** panel on the right lists it.
 
 Embed images with `![[picture.png]]` or paste an image straight into the editor;
 it is saved to `attachments/`.
@@ -789,8 +771,7 @@ def start(argv=None):
     fresh = not VAULT.exists() or not any(VAULT.iterdir())
     VAULT.mkdir(parents=True, exist_ok=True)
     if fresh:
-        (VAULT / "Welcome.md").write_text(WELCOME.format(vault=VAULT), encoding="utf-8")
-        (VAULT / "Getting started.md").write_text(GETTING_STARTED, encoding="utf-8")
+        (VAULT / "Getting started.md").write_text(GETTING_STARTED.format(vault=VAULT), encoding="utf-8")
         guide = STATIC_DIR / "guide.md"
         if guide.is_file():
             shutil.copyfile(guide, VAULT / "Inkwell Guide.md")

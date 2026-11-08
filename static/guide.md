@@ -1,5 +1,5 @@
 ---
-guide-version: 4
+guide-version: 5
 tags:
   - inkwell
 ---
@@ -57,7 +57,7 @@ Three dashes on their own line make a divider, like the one above.
 
 ## Links between notes
 
-Type `[[` and pick a note from the list, like this link back to [[Welcome]].
+Type `[[` and pick a note from the list, like this link back to [[Getting started]].
 
 - `[[Note name]]` links to a note. If it doesn't exist yet, clicking it creates it.
 - `[[Note name#Heading]]` links to a heading inside a note.
