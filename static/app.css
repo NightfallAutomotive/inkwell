@@ -328,7 +328,7 @@ mark { background: var(--accent-soft); color: var(--fg); border-radius: 2px; pad
 .callout-example, .callout-quote { --c: var(--purple); }
 .callout-abstract, .callout-summary, .callout-todo { --c: var(--teal); }
 .md .callout[class*="callout-"] { border-left-color: var(--c, var(--accent)); background: color-mix(in srgb, var(--c, var(--accent)) 14%, transparent); }
-.md .callout-title { color: color-mix(in srgb, var(--c, var(--accent)) 72%, var(--fg));  font: 600 14px var(--sans); text-transform: capitalize; margin-bottom: 2px; }
+.md .callout-title { color: color-mix(in srgb, var(--c, var(--accent)) 72%, var(--fg));  font: 600 14px var(--sans); margin-bottom: 2px; }
 .md .embed { border-left: 2px solid var(--line); padding: 2px 14px; margin: 1em 0; }
 .md .embed-title { font: 600 12px var(--sans); color: var(--fg3); text-transform: uppercase; letter-spacing: .04em; cursor: pointer; }
 .md mark { background: color-mix(in srgb, var(--yellow) 45%, transparent); color: inherit; }
@@ -388,7 +388,7 @@ input[type=color].sw-custom { width: 30px; height: 26px; border: 1px solid var(-
 .pair { display: flex; gap: 10px; align-items: center; font-size: 12px; color: var(--fg2); }
 .pair label { display: flex; align-items: center; gap: 5px; }
 .linkish { border: 0; background: none; color: var(--accent); font-size: 12px; padding: 2px 4px; }
-.set-btn { border: 1px solid var(--accent); background: var(--accent-soft); color: var(--fg); border-radius: 6px; padding: 5px 14px; font-weight: 500; }
+.set-btn { text-decoration: none; font-size: 13.5px; border: 1px solid var(--accent); background: var(--accent-soft); color: var(--fg); border-radius: 6px; padding: 5px 14px; font-weight: 500; }
 .set-btn:hover { background: var(--accent); color: var(--on-accent); }
 .set-foot { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; }
 .set-foot button { border: 1px solid var(--line); background: var(--bg2); border-radius: 6px; padding: 5px 14px; color: var(--fg); }

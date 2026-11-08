@@ -268,6 +268,7 @@ def build_index():
         })
     return {
         "vault": str(VAULT),
+        "vaultDisplay": "~/" + VAULT.relative_to(Path.home()).as_posix() if Path.home() in VAULT.parents else str(VAULT),
         "notes": out,
         "folders": folders,
         "files": [rel_of(p) for p in files],

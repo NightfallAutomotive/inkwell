@@ -105,3 +105,9 @@ New to Inkwell? Open **⚙ Settings → Open the guide** for a how-to note cover
 | Ctrl+, | Settings |
 
 Tab shortcuts use Alt because browsers keep Ctrl+T and Ctrl+W for themselves.
+
+## Problems and licence
+
+To report a bug, email robert@nightfallautomotive.co.uk (see [SUPPORT.md](SUPPORT.md)).
+
+Inkwell is MIT licensed (see [LICENSE](LICENSE)). The bundled components and their licences are listed in [licenses/](licenses/README.md).

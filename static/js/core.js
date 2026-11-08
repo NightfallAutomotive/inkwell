@@ -346,7 +346,7 @@ function postProcess(root, from, depth) {
     p.innerHTML = p.innerHTML.slice(m[0].length);
     const title = document.createElement('div');
     title.className = 'callout-title';
-    title.textContent = m[2].trim() || m[1];
+    title.textContent = m[2].trim() || m[1][0].toUpperCase() + m[1].slice(1).toLowerCase(); // only the default title is capitalised
     bq.prepend(title);
     if (!p.innerHTML.trim()) p.remove();
   }

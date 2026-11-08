@@ -7,20 +7,38 @@
     <name>Nightfall Automotive</name>
   </developer>
   <metadata_license>CC0-1.0</metadata_license>
-  <project_license>LicenseRef-proprietary</project_license>
+  <project_license>MIT AND (Apache-2.0 OR MPL-2.0) AND OFL-1.1</project_license>
+  <update_contact>robert@nightfallautomotive.co.uk</update_contact>
   <description>
-    <p>Inkwell keeps your notes as plain Markdown files in a folder on your computer and links them together.</p>
+    <p>Inkwell keeps your notes as plain Markdown files in a folder on your computer, and links them together so ideas are easy to find again. Nothing is locked into a database: your notes stay readable in any text editor.</p>
     <ul>
-      <li>Live preview editing, with tabs and side-by-side panes</li>
-      <li>[[Links]] between notes, backlinks, tags and a graph of how notes connect</li>
-      <li>Tick boxes, callouts, tables, properties and HTML that renders like a web page</li>
+      <li>Live preview: formatting appears as you type</li>
+      <li>Tabs and side-by-side notes</li>
+      <li>Links between notes, backlinks, tags and a graph of how everything connects</li>
+      <li>Tick boxes, callouts, tables, properties, and HTML that shows like a web page</li>
       <li>Bookmarks, daily notes, templates and file recovery</li>
-      <li>Optional password, so you can reach your notes from your phone</li>
+      <li>Light and dark themes with your own colours and text size</li>
+      <li>An optional password, so you can reach your notes from your phone</li>
     </ul>
   </description>
   <launchable type="desktop-id">io.github.NightfallAutomotive.Inkwell.desktop</launchable>
   <url type="homepage">https://github.com/NightfallAutomotive/inkwell</url>
-  <url type="bugtracker">https://github.com/NightfallAutomotive/inkwell/issues</url>
+  <url type="bugtracker">https://github.com/NightfallAutomotive/inkwell/blob/main/SUPPORT.md</url>
+  <url type="vcs-browser">https://github.com/NightfallAutomotive/inkwell</url>
+  <screenshots>
+    <screenshot type="default">
+      <caption>Writing a note with live preview, properties and tick boxes</caption>
+      <image>https://raw.githubusercontent.com/NightfallAutomotive/inkwell/v1.0.0/flatpak/screenshots/editor-dark.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Two notes side by side in the light theme</caption>
+      <image>https://raw.githubusercontent.com/NightfallAutomotive/inkwell/v1.0.0/flatpak/screenshots/split-light.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>The graph of how notes and tags connect</caption>
+      <image>https://raw.githubusercontent.com/NightfallAutomotive/inkwell/v1.0.0/flatpak/screenshots/graph-dark.png</image>
+    </screenshot>
+  </screenshots>
   <content_rating type="oars-1.1"/>
   <branding>
     <color type="primary" scheme_preference="light">#88c0d0</color>
@@ -28,7 +46,9 @@
   </branding>
   <releases>
     <release version="1.0.0" date="2026-11-08">
-      <description><p>First Flatpak release.</p></description>
+      <description>
+        <p>First release.</p>
+      </description>
     </release>
   </releases>
 </component>

@@ -9,7 +9,7 @@ async function refreshIndex({ quiet = false } = {}) {
   S.index = idx;
   rebuildMaps();
   const sig = idx.notes.map((n) => n.path + n.mtime).join('|') + idx.folders.join('|') + idx.files.join('|');
-  $('#vault-path').textContent = idx.vault;
+  $('#vault-path').textContent = idx.vaultDisplay || idx.vault;
   $('#vault-path').title = idx.vault;
   $('#st-vault').textContent = `${idx.notes.length} notes`;
   if (sig === prevSig && quiet) return;

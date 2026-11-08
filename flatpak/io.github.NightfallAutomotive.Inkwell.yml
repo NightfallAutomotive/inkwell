@@ -30,6 +30,7 @@ modules:
       - install -Dm644 static/brand/skull.svg /app/share/icons/hicolor/scalable/apps/${FLATPAK_ID}.svg
       - install -Dm644 static/brand/icon-256.png /app/share/icons/hicolor/256x256/apps/${FLATPAK_ID}.png
       - install -Dm644 static/brand/icon-512.png /app/share/icons/hicolor/512x512/apps/${FLATPAK_ID}.png
+      - install -Dm644 -t /app/share/licenses/${FLATPAK_ID} LICENSE licenses/*
     sources:
       - type: dir
         path: ..

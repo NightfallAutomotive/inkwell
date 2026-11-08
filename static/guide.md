@@ -1,5 +1,5 @@
 ---
-guide-version: 3
+guide-version: 4
 tags:
   - inkwell
 ---
@@ -250,6 +250,10 @@ The full instructions for each one are in `docs/online.md` in the Inkwell folder
 > - Too many wrong passwords pause sign-ins for 10 minutes.
 > - Running `inkwell --set-password` again changes the password and signs out every device.
 > - Back up your whole vault folder. It holds your notes, plus Inkwell's bookmarks and file history in `.inkwell`.
+
+## Something not working?
+
+Email robert@nightfallautomotive.co.uk, or use **⚙ Settings → Report a problem**. Say what you did, what you expected, and what happened instead.
 
 ## All the shortcuts
 
