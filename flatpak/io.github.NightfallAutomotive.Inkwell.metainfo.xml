@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.NightfallAutomotive.Inkwell</id>
+  <name>Inkwell</name>
+  <summary>Markdown notes, linked together</summary>
+  <developer id="io.github.nightfallautomotive">
+    <name>Nightfall Automotive</name>
+  </developer>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>LicenseRef-proprietary</project_license>
+  <description>
+    <p>Inkwell keeps your notes as plain Markdown files in a folder on your computer and links them together.</p>
+    <ul>
+      <li>Live preview editing, with tabs and side-by-side panes</li>
+      <li>[[Links]] between notes, backlinks, tags and a graph of how notes connect</li>
+      <li>Tick boxes, callouts, tables, properties and HTML that renders like a web page</li>
+      <li>Bookmarks, daily notes, templates and file recovery</li>
+      <li>Optional password, so you can reach your notes from your phone</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">io.github.NightfallAutomotive.Inkwell.desktop</launchable>
+  <url type="homepage">https://github.com/NightfallAutomotive/inkwell</url>
+  <url type="bugtracker">https://github.com/NightfallAutomotive/inkwell/issues</url>
+  <content_rating type="oars-1.1"/>
+  <branding>
+    <color type="primary" scheme_preference="light">#88c0d0</color>
+    <color type="primary" scheme_preference="dark">#2e3440</color>
+  </branding>
+  <releases>
+    <release version="1.0.0" date="2026-11-08">
+      <description><p>First Flatpak release.</p></description>
+    </release>
+  </releases>
+</component>

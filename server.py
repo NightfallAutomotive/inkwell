@@ -740,7 +740,12 @@ def set_password():
     print(f"Password saved in {CONFIG_FILE}. Restart Inkwell for it to take effect.")
 
 
-def main():
+def start(argv=None):
+    """Parse options and bind the server without serving yet.
+
+    Returns (server, url, how): server is None when this Inkwell is already running (url points
+    at it) or when a one-off command like --set-password ran (url is None too).
+    """
     global VAULT, SERVER
     load_config()
     ap = argparse.ArgumentParser(description="Inkwell: local Markdown notes")
@@ -754,19 +759,22 @@ def main():
     ap.add_argument("--set-password", action="store_true", help="set the password needed to sign in, then exit")
     ap.add_argument("--remove-password", action="store_true", help="remove the password (localhost-only again), then exit")
     ap.add_argument("--set-vault", metavar="DIR", help="remember DIR as the default vault, then exit")
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
     how = "none" if args.no_browser else args.open
 
     if args.set_password:
-        return set_password()
+        set_password()
+        return None, None, how
     if args.remove_password:
         CONFIG.pop("password", None)
         save_config()
-        return print("Password removed. Inkwell will only answer on localhost.")
+        print("Password removed. Inkwell will only answer on localhost.")
+        return None, None, how
     if args.set_vault:
         CONFIG["vault"] = str(Path(args.set_vault).expanduser().resolve())
         save_config()
-        return print(f"Default vault: {CONFIG['vault']}")
+        print(f"Default vault: {CONFIG['vault']}")
+        return None, None, how
 
     local_only = args.host in ("127.0.0.1", "localhost", "::1")
     if not local_only and not password_set():
@@ -798,8 +806,7 @@ def main():
             if running and running.get("version") == VERSION:
                 url = f"http://127.0.0.1:{port}/"
                 print(f"Inkwell already running at {url}")
-                open_ui(url, how)
-                sys.exit(0)
+                return None, url, how
             if running and ask_shutdown(port):
                 print(f"Replaced an older Inkwell on port {port}")
                 try:
@@ -818,6 +825,15 @@ def main():
     print(f"Inkwell serving vault {VAULT}\n  → {url}   (Ctrl+C to stop)")
     if not local_only:
         print(f"  also listening on {args.host}:{port} (password required)")
+    return srv, url, how
+
+
+def main(argv=None):
+    srv, url, how = start(argv)
+    if url is None:
+        return
+    if srv is None:
+        return open_ui(url, how)
     threading.Timer(0.6, lambda: open_ui(url, how)).start()
     try:
         srv.serve_forever()

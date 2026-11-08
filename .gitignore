@@ -1,2 +1,6 @@
 __pycache__/
 *.inkwell-tmp
+flatpak/build/
+flatpak/repo/
+.flatpak-builder/
+*.flatpak

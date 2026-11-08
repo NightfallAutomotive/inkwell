@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Inkwell
+GenericName=Notes
+Comment=Markdown notes, linked together
+Exec=inkwell
+Icon=io.github.NightfallAutomotive.Inkwell
+Terminal=false
+Categories=Office;Utility;TextEditor;
+Keywords=notes;markdown;wiki;journal;zettelkasten;
+StartupNotify=true

@@ -27,6 +27,10 @@ Run it from a normal terminal, not one built into a Flatpak app such as a code e
 
 In Chrome or Edge you can also use **Install Inkwell** in the address bar to get a standalone app window.
 
+### As a Flatpak
+
+Inkwell can also be built as a Flatpak that runs in its own window and shows up in GNOME Software. See [flatpak/README.md](flatpak/README.md).
+
 ### Command line
 
 ```bash
