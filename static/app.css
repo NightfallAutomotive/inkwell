@@ -421,7 +421,7 @@ input[type=color].sw-custom { width: 30px; height: 26px; border: 1px solid var(-
 #hover h1 { font-size: 1.3em; }
 
 #toasts { position: fixed; bottom: 34px; right: 16px; z-index: 70; display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
-.toast { background: var(--bg3); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 7px 14px; box-shadow: var(--shadow); font-size: 13px; animation: tin .15s ease-out; }
+.toast { max-width: min(460px, 90vw); line-height: 1.45; background: var(--bg3); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 7px 14px; box-shadow: var(--shadow); font-size: 13px; animation: tin .15s ease-out; }
 .toast.err { border-color: var(--red); }
 @keyframes tin { from { transform: translateY(6px); opacity: 0; } }
 

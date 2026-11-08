@@ -29,16 +29,20 @@ async function api(method, ep, { qs, body, raw } = {}) {
     body: raw || (body ? JSON.stringify(body) : undefined),
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) { const e = new Error(data.error || res.statusText); e.status = res.status; e.data = data; throw e; }
+  if (!res.ok) {
+    const stale = res.status === 404 && /^unknown endpoint/.test(data.error || '');
+    const e = new Error(stale ? 'the Inkwell running in the background is an older version. Close Inkwell and start it again from the app menu' : data.error || res.statusText);
+    e.status = res.status; e.data = data; throw e;
+  }
   return data;
 }
 
-function toast(msg, err = false) {
+function toast(msg, err = false, ms = 0) {
   const t = document.createElement('div');
   t.className = 'toast' + (err ? ' err' : '');
   t.textContent = msg;
   $('#toasts').appendChild(t);
-  setTimeout(() => t.remove(), err ? 5000 : 2600);
+  setTimeout(() => t.remove(), ms || (err ? 5000 : 2600));
 }
 
 // ------------------------------------------------------------------ state

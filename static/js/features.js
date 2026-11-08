@@ -553,6 +553,15 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowRight') return go('forward');
 }, true);
 
+// ------------------------------------------------------------------ server version
+const SERVER_STALE_MSG = 'Inkwell was updated, but the old version is still running in the background, so bookmarks, file recovery and merging won\'t work. Close Inkwell and start it again from the app menu.';
+async function checkServer() {
+  try {
+    const p = await api('GET', 'ping');
+    if (!p.version) { S.serverStale = true; toast(SERVER_STALE_MSG, true, 15000); }
+  } catch {}
+}
+
 // ------------------------------------------------------------------ boot
 (async function boot() {
   applyTheme();
@@ -562,6 +571,7 @@ document.addEventListener('keydown', (e) => {
   if (store.get('noLeft', false)) el.app.classList.add('no-left');
   if (store.get('noRight', false)) el.app.classList.add('no-right');
   await refreshIndex();
+  checkServer();
   await loadBookmarks();
   const fromHash = decodeURI(location.hash.replace(/^#\/?/, ''));
   const hasLayout = !!store.get('workspace', null)?.panes?.length;

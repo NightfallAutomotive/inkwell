@@ -21,6 +21,9 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 APP_DIR = Path(__file__).resolve().parent
+# Identifies this build, so a newer launch can replace an older server that is still running.
+VERSION = __import__("hashlib").sha1((APP_DIR / "server.py").read_bytes()).hexdigest()[:12]
+SERVER = None
 STATIC_DIR = APP_DIR / "static"
 VAULT: Path = Path.home() / "Notes"
 TRASH = ".trash"
@@ -329,7 +332,13 @@ class Handler(BaseHTTPRequestHandler):
 
     def api(self, method, ep, qs):
         if ep == "ping" and method == "GET":
-            return self.send_json({"app": "inkwell", "vault": str(VAULT)})
+            return self.send_json({"app": "inkwell", "vault": str(VAULT), "version": VERSION})
+
+        if ep == "shutdown" and method == "POST":
+            # used by a newer launch to replace this server; same-origin/CLI only (see route())
+            self.send_json({"ok": True})
+            threading.Thread(target=SERVER.shutdown, daemon=True).start()
+            return
 
         if ep == "index" and method == "GET":
             return self.send_json(build_index())
@@ -488,17 +497,34 @@ it is saved to `attachments/`.
 """
 
 
-def is_inkwell(port: int) -> bool:
+def ping(port: int):
+    """The /api/ping reply of an Inkwell on this port, or None if it isn't Inkwell."""
     import urllib.request
     try:
         with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/ping", timeout=1.5) as r:
-            return json.loads(r.read() or b"{}").get("app") == "inkwell"
+            d = json.loads(r.read() or b"{}")
+            return d if d.get("app") == "inkwell" else None
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def ask_shutdown(port: int) -> bool:
+    import urllib.request
+    try:
+        req = urllib.request.Request(f"http://127.0.0.1:{port}/api/shutdown", data=b"{}", method="POST")
+        with urllib.request.urlopen(req, timeout=2):
+            pass
     except Exception:  # noqa: BLE001
         return False
+    for _ in range(40):  # wait for the port to free up
+        time.sleep(0.1)
+        if ping(port) is None:
+            return True
+    return False
 
 
 def main():
-    global VAULT
+    global VAULT, SERVER
     ap = argparse.ArgumentParser(description="Inkwell local notes")
     ap.add_argument("vault", nargs="?", default=os.environ.get("INKWELL_VAULT", str(Path.home() / "Notes")))
     ap.add_argument("--port", type=int, default=int(os.environ.get("INKWELL_PORT", 8473)))
@@ -518,16 +544,29 @@ def main():
             srv = ThreadingHTTPServer(("127.0.0.1", port), Handler)
             break
         except OSError:
-            # Port taken: if it's Inkwell already, just open it; otherwise try the next port.
-            if is_inkwell(port):
+            # Port taken. The same Inkwell build: just open it. An older build: replace it.
+            # Anything else: try the next port.
+            running = ping(port)
+            if running and running.get("version") == VERSION:
                 url = f"http://127.0.0.1:{port}/"
                 print(f"Inkwell already running at {url}")
                 if not args.no_browser:
                     webbrowser.open(url)
                 sys.exit(0)
-            print(f"Port {port} is used by another app, trying {port + 1}")
+            if running and ask_shutdown(port):
+                print(f"Replaced an older Inkwell on port {port}")
+                try:
+                    srv = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+                    break
+                except OSError:
+                    pass
+            if running:
+                print(f"An older Inkwell on port {port} could not be stopped; close it and start Inkwell again")
+            else:
+                print(f"Port {port} is used by another app, trying {port + 1}")
     if srv is None:
         sys.exit(f"No free port in {args.port}-{args.port + 19}")
+    SERVER = srv
     url = f"http://127.0.0.1:{port}/"
     print(f"Inkwell serving vault {VAULT}\n  → {url}   (Ctrl+C to stop)")
     if not args.no_browser:
