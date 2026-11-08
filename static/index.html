@@ -19,6 +19,7 @@
     <button class="rb" data-cmd="palette" title="Command palette (Ctrl+P)">⌘</button>
     <div class="rb-spacer"></div>
     <button class="rb" data-cmd="theme" title="Toggle light/dark">◐</button>
+    <button class="rb" data-cmd="settings" title="Settings (Ctrl+,)">⚙</button>
     <button class="rb" data-cmd="toggle-right" title="Toggle right panel">⫴</button>
   </nav>
 
@@ -125,6 +126,30 @@
   </div>
 </div>
 
+<div id="settings" class="overlay" hidden>
+  <div class="settings-box" role="dialog" aria-labelledby="set-title">
+    <div class="set-head"><h2 id="set-title">Settings</h2><button id="set-close" title="Close (Esc)">✕</button></div>
+
+    <h3>Text</h3>
+    <div class="set-row"><div class="lbl"><b>Note text size</b><small>Editor and reading view</small></div>
+      <div class="set-ctl"><input type="range" id="set-size" min="12" max="26" step="1"><span class="set-val" id="set-size-val"></span></div></div>
+    <div class="set-row"><div class="lbl"><b>Note font</b></div>
+      <div class="seg" id="set-font"><button data-v="serif">Serif</button><button data-v="sans">Sans</button><button data-v="mono">Mono</button></div></div>
+    <div class="set-row"><div class="lbl"><b>Sidebar text size</b><small>File list and the right panel</small></div>
+      <div class="seg" id="set-side"><button data-v="0.9">Small</button><button data-v="1">Normal</button><button data-v="1.15">Large</button></div></div>
+
+    <h3>Colours</h3>
+    <div class="set-row"><div class="lbl"><b>Theme</b></div>
+      <div class="seg" id="set-theme"><button data-v="system">Match system</button><button data-v="dark">Dark</button><button data-v="light">Light</button></div></div>
+    <div class="set-row"><div class="lbl"><b>Accent colour</b><small>Links, buttons, selection and the cursor</small></div>
+      <div class="swatches" id="set-accent"></div></div>
+    <div class="set-row"><div class="lbl"><b>Background and text</b><small>For the <span id="set-bgtheme">dark</span> theme. Other shades follow from these.</small></div>
+      <div class="pair"><label>Background <input type="color" class="sw-custom" id="set-bg"></label><label>Text <input type="color" class="sw-custom" id="set-fg"></label><button class="linkish" id="set-bgreset">Use Nord</button></div></div>
+
+    <div class="set-foot"><span class="muted small">Saved on this computer.</span><button id="set-reset">Reset all settings</button></div>
+  </div>
+</div>
+
 <div id="ctx" hidden></div>
 <div id="hover" hidden></div>
 <div id="toasts"></div>
@@ -137,6 +162,7 @@
 <script src="js/editor.js"></script>
 <script src="js/workspace.js"></script>
 <script src="js/sidebar.js"></script>
+<script src="js/settings.js"></script>
 <script src="js/features.js"></script>
 </body>
 </html>

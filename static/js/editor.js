@@ -458,7 +458,7 @@ function buildBlocks(state) {
   const tree = ensureSyntaxTree(state, state.doc.length, 40) || syntaxTree(state);
   const doc = state.doc, out = [], path = state.facet(notePath);
   const regions = docHtmlRegions(doc);
-  const theme = document.documentElement.dataset.theme;
+  const theme = document.documentElement.dataset.theme + (document.getElementById('user-theme')?.textContent || ''); // re-render frames when colours change
   for (const r of regions) {
     if (!selTouches(state, r.from, r.to)) out.push(Decoration.replace({ block: true, widget: new HtmlW(r.html, r.from, theme) }).range(r.from, r.to));
     else for (let pos = r.from; pos <= r.to;) { const l = doc.lineAt(pos); out.push(Decoration.line({ class: 'cm-lp-html-src' }).range(l.from)); pos = l.to + 1; }

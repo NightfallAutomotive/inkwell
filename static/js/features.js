@@ -47,6 +47,7 @@ const COMMANDS = [
   { id: 'toggle-left', name: 'Toggle left sidebar', key: 'Ctrl+\\', fn: () => toggleLeft() },
   { id: 'toggle-right', name: 'Toggle right sidebar', fn: toggleRight },
   { id: 'theme', name: 'Toggle light / dark theme', fn: toggleTheme },
+  { id: 'settings', name: 'Open settings', key: 'Ctrl+,', fn: openSettings },
   { id: 'reload', name: 'Reload vault from disk', fn: () => refreshIndex().then(() => toast('Vault reloaded')) },
   { id: 'back', name: 'Navigate back', key: 'Alt+←', fn: () => goHist(-1) },
   { id: 'forward', name: 'Navigate forward', key: 'Alt+→', fn: () => goHist(1) },
@@ -520,6 +521,7 @@ document.addEventListener('keydown', (e) => {
   const mod = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
   if (e.key === 'Escape') {
     if (!$('#recovery').hidden) { e.preventDefault(); return closeRecovery(); }
+    if (!$('#settings').hidden) { e.preventDefault(); return closeSettings(); }
     if (!$('#graph').hidden) return closeGraph();
     if (!$('#palette').hidden) return closePalette();
     $('#ctx').hidden = true; $('#hover').hidden = true;
@@ -535,6 +537,7 @@ document.addEventListener('keydown', (e) => {
   if (mod && e.shiftKey && k === 'f') return go('search');
   if (mod && !e.altKey && k === 's') { e.preventDefault(); e.stopPropagation(); saveAll(); return; }
   if (mod && e.key === '\\') return go('toggle-left');
+  if (mod && e.key === ',') return go('settings');
   if (!e.altKey || mod) return;
   if (k === 'n') return go('new-note');
   if (k === 'd') return go('daily');
@@ -552,8 +555,7 @@ document.addEventListener('keydown', (e) => {
 
 // ------------------------------------------------------------------ boot
 (async function boot() {
-  const theme = store.get('theme', matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
-  document.documentElement.dataset.theme = theme;
+  applyTheme();
   const w = store.get('widths', {});
   if (w.l) el.app.style.setProperty('--left-w', w.l);
   if (w.r) el.app.style.setProperty('--right-w', w.r);

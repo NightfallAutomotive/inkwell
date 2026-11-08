@@ -47,6 +47,7 @@ App-menu entry (optional): `cp inkwell.desktop ~/.local/share/applications/`
 - Autosave, plus a warning if the file changed on disk while you were editing it
 - Deletes go to `<vault>/.trash/`
 - Nord light and dark themes; sidebars can be resized
+- **Settings** (⚙ in the left bar, or `Ctrl+,`): note text size and font, sidebar text size, theme (dark, light or match system), accent colour, and custom background and text colours for each theme. They are saved per browser.
 
 ## Shortcuts
 
@@ -73,5 +74,6 @@ App-menu entry (optional): `cp inkwell.desktop ~/.local/share/applications/`
 | Ctrl+L | Cycle checklist item |
 | Alt+← / Alt+→ | Back / forward |
 | Ctrl+\\ | Toggle sidebar |
+| Ctrl+, | Settings |
 
 Tab shortcuts use Alt because browsers keep Ctrl+T and Ctrl+W for themselves.
