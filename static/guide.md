@@ -1,5 +1,5 @@
 ---
-guide-version: 1
+guide-version: 2
 tags:
   - inkwell
 ---
@@ -184,6 +184,10 @@ Click the ☆ at the top of a note (or press `Alt+B`) to bookmark it. Bookmarks 
 ## Settings
 
 The ⚙ button on the far left (or `Ctrl+,`) changes text size, the note font, sidebar text size, dark or light theme, the accent colour, and your own background and text colours. ◐ flips quickly between dark and light.
+
+## Using Inkwell on your phone or online
+
+Inkwell can be reached from your phone, a laptop or anywhere else. Set a password with `inkwell --set-password`, then follow the step-by-step guide in `docs/online.md` (in the Inkwell folder, or on GitHub). Tailscale is the easiest and most private way. Once it's working, use your phone browser's *Add to Home screen* for an app icon.
 
 ## All the shortcuts
 

@@ -1,9 +1,0 @@
-#!/usr/bin/env xdg-open
-[Desktop Entry]
-Type=Application
-Name=Inkwell
-Comment=Local Markdown notes
-Exec=/home/Nightfall/Documents/GitHub/inkwell/inkwell.sh
-Icon=/home/Nightfall/Documents/GitHub/inkwell/static/brand/skull.svg
-Terminal=false
-Categories=Office;Utility;

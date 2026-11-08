@@ -1,0 +1,16 @@
+{
+  "name": "Inkwell",
+  "short_name": "Inkwell",
+  "description": "Markdown notes, linked together",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#2e3440",
+  "theme_color": "#2e3440",
+  "icons": [
+    { "src": "/brand/skull.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "/brand/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/brand/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/brand/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

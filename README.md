@@ -7,20 +7,42 @@
 
 A personal Markdown notes app that runs locally. Notes are plain `.md` files in a folder (the vault), so they work with git, Syncthing or any other editor.
 
-- **Server:** `server.py`, Python 3 standard library only, nothing to install. Listens on 127.0.0.1 only.
+- **Server:** `server.py`, Python 3 standard library only, nothing to install. It listens on 127.0.0.1 unless you set a password and choose otherwise.
 - **UI:** `static/` (`js/` holds the app code). Everything it needs is bundled in `static/vendor/`, so it works offline: marked 12.0.2, DOMPurify 3.1.6, and a CodeMirror 6 build for the editor. To rebuild that bundle, run `python3 tools/build_codemirror.py` (no Node needed; the versions are pinned in `tools/codemirror.lock.json`).
 
-## Run
+## Install
 
 ```bash
-./inkwell.sh            # vault = ~/Notes (created with a Welcome note if empty)
-./inkwell.sh ~/MyVault  # any folder
-python3 server.py --port 9000 --no-browser
+git clone https://github.com/NightfallAutomotive/inkwell.git
+cd inkwell
+./install.sh                    # or: ./install.sh --vault ~/MyNotes --service
 ```
 
-Then open <http://127.0.0.1:8473/>. Running it again while it's already up just opens the tab.
+This installs Inkwell for your user (no root needed): the app goes in `~/.local/share/inkwell`, the `inkwell` command in `~/.local/bin`, and an entry with its icon in your app menu. It opens in its own window when Chromium, Chrome, Brave, Edge or Vivaldi is installed (normal or Flatpak), and in a browser tab otherwise.
 
-App-menu entry (optional): `cp inkwell.desktop ~/.local/share/applications/`
+- `--vault DIR` sets the notes folder (default `~/Notes`).
+- `--service` starts Inkwell in the background whenever you log in.
+- To update, run `git pull && ./install.sh`. A running Inkwell is replaced by the new version the next time you open it.
+- To remove Inkwell, run `./install.sh --uninstall`. Your notes and settings stay.
+
+In Chrome or Edge you can also use **Install Inkwell** in the address bar to get a standalone app window.
+
+### Command line
+
+```bash
+inkwell                  # start (or switch to) Inkwell
+inkwell ~/OtherVault     # open a different vault
+inkwell --open tab       # in a browser tab instead of an app window (or: none)
+inkwell --set-vault DIR  # change the default vault
+inkwell --set-password   # require a password (needed for online use)
+inkwell --help
+```
+
+Settings are kept in `~/.config/inkwell/config.json`. To run Inkwell without installing, use `python3 server.py` from this folder.
+
+## Use it online
+
+Inkwell can be reached from your phone or anywhere else once it has a password and a way in, such as Tailscale, Cloudflare Tunnel or your own domain. [docs/online.md](docs/online.md) has the step-by-step guide.
 
 ## Features
 

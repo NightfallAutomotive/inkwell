@@ -29,6 +29,7 @@ async function api(method, ep, { qs, body, raw } = {}) {
     body: raw || (body ? JSON.stringify(body) : undefined),
   });
   const data = await res.json().catch(() => ({}));
+  if (res.status === 401) { location.href = '/login' + location.hash; throw new Error('signed out'); }
   if (!res.ok) {
     const stale = res.status === 404 && /^unknown endpoint/.test(data.error || '');
     const e = new Error(stale ? 'the Inkwell running in the background is an older version. Close Inkwell and start it again from the app menu' : data.error || res.statusText);

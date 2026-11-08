@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
 """Inkwell — a local, folder-based Markdown notes app.
 
-Usage:  python3 server.py [VAULT_DIR] [--port 8473] [--no-browser]
-Notes are plain .md files inside VAULT_DIR (default ~/Notes).
-Binds to 127.0.0.1 only.
+Usage:  python3 server.py [VAULT_DIR] [--port 8473] [--open window|tab|none]
+        python3 server.py --set-password      (required before allowing access from other devices)
+Notes are plain .md files inside VAULT_DIR (default ~/Notes, or "vault" in the config file).
+Settings live in ~/.config/inkwell/config.json. Listens on 127.0.0.1 unless told otherwise.
 """
 import argparse
+import hashlib
+import hmac
 import json
+import secrets
+import subprocess
 import mimetypes
 import os
 import re
@@ -24,6 +29,131 @@ APP_DIR = Path(__file__).resolve().parent
 # Identifies this build, so a newer launch can replace an older server that is still running.
 VERSION = __import__("hashlib").sha1((APP_DIR / "server.py").read_bytes()).hexdigest()[:12]
 SERVER = None
+CONFIG_DIR = Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config") / "inkwell"
+CONFIG_FILE = CONFIG_DIR / "config.json"
+CONFIG: dict = {}
+SESSION_DAYS = 30
+COOKIE = "inkwell_session"
+LOGIN_FAILS: list = []  # timestamps of recent failed logins
+
+
+# ---------------------------------------------------------------- config & login
+def load_config():
+    global CONFIG
+    try:
+        CONFIG = json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        CONFIG = {}
+    return CONFIG
+
+
+def save_config():
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    tmp = CONFIG_FILE.with_name(".config.json.tmp")
+    tmp.write_text(json.dumps(CONFIG, indent=2), encoding="utf-8")
+    os.chmod(tmp, 0o600)
+    os.replace(tmp, CONFIG_FILE)
+
+
+def hash_password(pw: str) -> str:
+    salt = secrets.token_bytes(16)
+    n = 300_000
+    return f"pbkdf2_sha256${n}${salt.hex()}${hashlib.pbkdf2_hmac('sha256', pw.encode(), salt, n).hex()}"
+
+
+def check_password(pw: str) -> bool:
+    try:
+        _, n, salt, digest = CONFIG["password"].split("$")
+        got = hashlib.pbkdf2_hmac("sha256", pw.encode(), bytes.fromhex(salt), int(n)).hex()
+        return hmac.compare_digest(got, digest)
+    except (KeyError, ValueError):
+        return False
+
+
+def password_set() -> bool:
+    return bool(CONFIG.get("password"))
+
+
+def make_session() -> str:
+    exp = str(int(time.time()) + SESSION_DAYS * 86400)
+    sig = hmac.new(CONFIG["secret"].encode(), exp.encode(), hashlib.sha256).hexdigest()
+    return f"{exp}.{sig}"
+
+
+def session_valid(token: str) -> bool:
+    try:
+        exp, sig = token.split(".", 1)
+        good = hmac.new(CONFIG["secret"].encode(), exp.encode(), hashlib.sha256).hexdigest()
+        return hmac.compare_digest(sig, good) and int(exp) > time.time()
+    except (KeyError, ValueError):
+        return False
+
+
+LOGIN_PAGE = """<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sign in · Inkwell</title><link rel="icon" type="image/svg+xml" href="/brand/skull.svg"><link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#2e3440">
+<style>
+:root{color-scheme:dark;--bg:#2e3440;--bg2:#3b4252;--fg:#eceff4;--fg3:#8e9ab0;--accent:#88c0d0;--red:#bf616a}
+@media (prefers-color-scheme:light){:root{color-scheme:light;--bg:#eceff4;--bg2:#e5e9f0;--fg:#2e3440;--fg3:#6b778d;--accent:#5e81ac}}
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif;padding:0 16px}
+form{width:min(340px,100%);display:grid;gap:14px}
+img{width:220px;margin:0 auto 10px;display:block}
+.l{display:none}@media (prefers-color-scheme:light){.d{display:none}.l{display:block}}
+input{font:inherit;padding:10px 12px;border-radius:8px;border:1px solid var(--bg2);background:var(--bg2);color:var(--fg);outline:none}
+input:focus{border-color:var(--accent)}
+button{font:inherit;font-weight:600;padding:10px;border:0;border-radius:8px;background:var(--accent);color:var(--bg);cursor:pointer}
+p{margin:0;min-height:1.5em;color:var(--red);font-size:13px;text-align:center}
+</style></head><body>
+<form id="f"><img class="d" src="/brand/wordmark-dark.svg" alt="Inkwell"><img class="l" src="/brand/wordmark-light.svg" alt="Inkwell">
+<label for="pw" style="position:absolute;left:-9999px">Password</label>
+<input id="pw" type="password" autocomplete="current-password" placeholder="Password" autofocus required>
+<button>Sign in</button><p id="msg" role="alert"></p></form>
+<script>
+document.getElementById('f').onsubmit=async(e)=>{e.preventDefault();const m=document.getElementById('msg');m.textContent='';
+const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:document.getElementById('pw').value})});
+if(r.ok){location.href='/'+location.hash;return}const d=await r.json().catch(()=>({}));m.textContent=d.error||'Sign-in failed';};
+</script></body></html>"""
+
+
+# ---------------------------------------------------------------- opening a window
+CHROMIUM_CMDS = ["chromium", "chromium-browser", "google-chrome", "google-chrome-stable", "brave-browser", "brave",
+                 "microsoft-edge", "microsoft-edge-stable", "vivaldi", "vivaldi-stable"]
+CHROMIUM_FLATPAKS = ["org.chromium.Chromium", "com.google.Chrome", "com.brave.Browser", "com.microsoft.Edge",
+                     "com.vivaldi.Vivaldi", "io.github.ungoogled_software.ungoogled_chromium"]
+
+
+def find_app_browser():
+    """A command that opens a URL in a Chromium-style app window (no tabs or address bar), or None."""
+    custom = os.environ.get("INKWELL_BROWSER") or CONFIG.get("browser")
+    if custom:
+        return custom.split()
+    for c in CHROMIUM_CMDS:
+        if shutil.which(c):
+            return [c]
+    if shutil.which("flatpak"):
+        try:
+            apps = subprocess.run(["flatpak", "list", "--app", "--columns=application"], capture_output=True, text=True, timeout=5).stdout.split()
+        except (OSError, subprocess.SubprocessError):
+            apps = []
+        for a in CHROMIUM_FLATPAKS:
+            if a in apps:
+                return ["flatpak", "run", a]
+    return None
+
+
+def open_ui(url: str, how: str):
+    if how == "none":
+        return
+    if how == "window":
+        cmd = find_app_browser()
+        if cmd:
+            try:
+                subprocess.Popen(cmd + [f"--app={url}", "--class=Inkwell"], stdin=subprocess.DEVNULL,
+                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+                return
+            except OSError:
+                pass
+    webbrowser.open(url)
 STATIC_DIR = APP_DIR / "static"
 VAULT: Path = Path.home() / "Notes"
 TRASH = ".trash"
@@ -266,22 +396,33 @@ class Handler(BaseHTTPRequestHandler):
             super().log_message(fmt, *args)
 
     # -- response helpers
-    def send_json(self, obj, status=200):
+    def end_headers(self):
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Referrer-Policy", "same-origin")
+        super().end_headers()
+
+    def send_json(self, obj, status=200, headers=None):
         data = json.dumps(obj).encode()
         self.send_response(status)
+        for k, v in (headers or {}).items():
+            self.send_header(k, v)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
         self.wfile.write(data)
 
-    def send_file(self, p: Path, cache=False):
+    def send_file(self, p: Path, cache=False, sandbox=False):
         if not p.is_file():
             return self.send_json({"error": "not found"}, 404)
         ctype = mimetypes.guess_type(p.name)[0] or "application/octet-stream"
+        if p.suffix == ".webmanifest":
+            ctype = "application/manifest+json"
         data = p.read_bytes()
         self.send_response(200)
         self.send_header("Content-Type", ctype)
+        if sandbox:  # a vault file opened directly (e.g. an .html attachment) can't act as the app
+            self.send_header("Content-Security-Policy", "sandbox")
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Cache-Control", "max-age=3600" if cache else "no-cache")
         self.end_headers()
@@ -299,28 +440,68 @@ class Handler(BaseHTTPRequestHandler):
         host = self.headers.get("Host", "")
         return urlparse(origin).netloc == host
 
+    def session_ok(self):
+        if not password_set():
+            return True
+        for part in (self.headers.get("Cookie") or "").split(";"):
+            k, _, v = part.strip().partition("=")
+            if k == COOKIE and session_valid(v):
+                return True
+        return False
+
+    def local_cli(self):
+        """A request straight from this machine that isn't a browser or a proxy (the launcher)."""
+        return (self.client_address[0] in ("127.0.0.1", "::1") and not self.headers.get("Origin")
+                and not self.headers.get("X-Forwarded-For") and not self.headers.get("Forwarded"))
+
+    def cookie_header(self, value, max_age):
+        secure = "; Secure" if self.headers.get("X-Forwarded-Proto", "").lower() == "https" else ""
+        return f"{COOKIE}={value}; Path=/; Max-Age={max_age}; HttpOnly; SameSite=Lax{secure}"
+
     def route(self, method):
         url = urlparse(self.path)
         qs = {k: v[0] for k, v in parse_qs(url.query).items()}
         path = url.path
         try:
             hostname = (self.headers.get("Host") or "").rsplit(":", 1)[0].strip("[]")
-            if hostname not in ("127.0.0.1", "localhost", "::1"):
-                return self.send_json({"error": "bad host"}, 403)  # DNS-rebinding guard
+            if not password_set() and hostname not in ("127.0.0.1", "localhost", "::1"):
+                # DNS-rebinding guard. With a password set, any address is fine: the login protects it.
+                return self.send_json({"error": "Inkwell only answers on localhost until a password is set (run: inkwell --set-password)"}, 403)
             if method != "GET" and not self.check_origin():
                 return self.send_json({"error": "bad origin"}, 403)
+            public = path in ("/login", "/api/login", "/api/ping", "/manifest.webmanifest") or path.startswith("/brand/")
+            if not public and not self.session_ok() and not (path == "/api/shutdown" and self.local_cli()):
+                if path.startswith("/api/"):
+                    return self.send_json({"error": "signed out"}, 401)
+                self.send_response(302)
+                self.send_header("Location", "/login")
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return
+            if path == "/login" and method == "GET":
+                if password_set() and self.session_ok():
+                    self.send_response(302); self.send_header("Location", "/"); self.send_header("Content-Length", "0"); self.end_headers()
+                    return
+                data = LOGIN_PAGE.encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(data)))
+                self.send_header("Cache-Control", "no-store")
+                self.end_headers()
+                self.wfile.write(data)
+                return
             if path.startswith("/api/"):
                 return self.api(method, path[5:], qs)
             if method != "GET":
                 return self.send_json({"error": "method"}, 405)
             if path.startswith("/vault/"):
                 from urllib.parse import unquote
-                return self.send_file(safe_path(unquote(path[7:])))
+                return self.send_file(safe_path(unquote(path[7:])), sandbox=True)
             rel = "index.html" if path in ("/", "") else path.lstrip("/")
             p = (STATIC_DIR / rel).resolve()
             if STATIC_DIR not in p.parents:
                 return self.send_json({"error": "not found"}, 404)
-            return self.send_file(p, cache="/vendor/" in path)
+            return self.send_file(p, cache="/vendor/" in path or "/brand/" in path)
         except PermissionError as e:
             return self.send_json({"error": str(e)}, 403)
         except FileNotFoundError as e:
@@ -332,7 +513,26 @@ class Handler(BaseHTTPRequestHandler):
 
     def api(self, method, ep, qs):
         if ep == "ping" and method == "GET":
-            return self.send_json({"app": "inkwell", "vault": str(VAULT), "version": VERSION})
+            d = {"app": "inkwell", "version": VERSION, "auth": password_set()}
+            if self.session_ok():
+                d["vault"] = str(VAULT)
+            return self.send_json(d)
+
+        if ep == "login" and method == "POST":
+            now = time.time()
+            LOGIN_FAILS[:] = [t for t in LOGIN_FAILS if now - t < 600]
+            if len(LOGIN_FAILS) >= 20:
+                return self.send_json({"error": "Too many wrong passwords. Wait 10 minutes and try again."}, 429)
+            if not password_set():
+                return self.send_json({"ok": True})
+            if check_password(str(self.body_json().get("password", ""))):
+                return self.send_json({"ok": True}, headers={"Set-Cookie": self.cookie_header(make_session(), SESSION_DAYS * 86400)})
+            LOGIN_FAILS.append(now)
+            time.sleep(1.5)
+            return self.send_json({"error": "Wrong password"}, 403)
+
+        if ep == "logout" and method == "POST":
+            return self.send_json({"ok": True}, headers={"Set-Cookie": self.cookie_header("", 0)})
 
         if ep == "shutdown" and method == "POST":
             # used by a newer launch to replace this server; same-origin/CLI only (see route())
@@ -525,13 +725,54 @@ def ask_shutdown(port: int) -> bool:
     return False
 
 
+def set_password():
+    import getpass
+    pw = getpass.getpass("New Inkwell password: ")
+    if len(pw) < 8:
+        sys.exit("Use at least 8 characters.")
+    if getpass.getpass("Type it again: ") != pw:
+        sys.exit("The passwords didn't match. Nothing was changed.")
+    CONFIG["password"] = hash_password(pw)
+    CONFIG["secret"] = secrets.token_hex(32)  # also signs everyone out
+    save_config()
+    print(f"Password saved in {CONFIG_FILE}. Restart Inkwell for it to take effect.")
+
+
 def main():
     global VAULT, SERVER
-    ap = argparse.ArgumentParser(description="Inkwell local notes")
-    ap.add_argument("vault", nargs="?", default=os.environ.get("INKWELL_VAULT", str(Path.home() / "Notes")))
-    ap.add_argument("--port", type=int, default=int(os.environ.get("INKWELL_PORT", 8473)))
-    ap.add_argument("--no-browser", action="store_true")
+    load_config()
+    ap = argparse.ArgumentParser(description="Inkwell: local Markdown notes")
+    ap.add_argument("vault", nargs="?", default=os.environ.get("INKWELL_VAULT") or CONFIG.get("vault") or str(Path.home() / "Notes"))
+    ap.add_argument("--port", type=int, default=int(os.environ.get("INKWELL_PORT") or CONFIG.get("port") or 8473))
+    ap.add_argument("--host", default=os.environ.get("INKWELL_HOST") or CONFIG.get("host") or "127.0.0.1",
+                    help="address to listen on; anything but localhost needs a password")
+    ap.add_argument("--open", choices=["window", "tab", "none"], default=CONFIG.get("open") or "window",
+                    help="open Inkwell in an app window (default), a browser tab, or not at all")
+    ap.add_argument("--no-browser", action="store_true", help="same as --open none")
+    ap.add_argument("--set-password", action="store_true", help="set the password needed to sign in, then exit")
+    ap.add_argument("--remove-password", action="store_true", help="remove the password (localhost-only again), then exit")
+    ap.add_argument("--set-vault", metavar="DIR", help="remember DIR as the default vault, then exit")
     args = ap.parse_args()
+    how = "none" if args.no_browser else args.open
+
+    if args.set_password:
+        return set_password()
+    if args.remove_password:
+        CONFIG.pop("password", None)
+        save_config()
+        return print("Password removed. Inkwell will only answer on localhost.")
+    if args.set_vault:
+        CONFIG["vault"] = str(Path(args.set_vault).expanduser().resolve())
+        save_config()
+        return print(f"Default vault: {CONFIG['vault']}")
+
+    local_only = args.host in ("127.0.0.1", "localhost", "::1")
+    if not local_only and not password_set():
+        sys.exit(f"Refusing to listen on {args.host} without a password: anyone who can reach it could read and change your notes.\n"
+                 "Set one first with:  inkwell --set-password")
+    if password_set() and not CONFIG.get("secret"):
+        CONFIG["secret"] = secrets.token_hex(32)
+        save_config()
 
     VAULT = Path(args.vault).expanduser().resolve()
     fresh = not VAULT.exists() or not any(VAULT.iterdir())
@@ -543,7 +784,7 @@ def main():
     srv = None
     for port in range(args.port, args.port + 20):
         try:
-            srv = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+            srv = ThreadingHTTPServer((args.host, port), Handler)
             break
         except OSError:
             # Port taken. The same Inkwell build: just open it. An older build: replace it.
@@ -552,13 +793,12 @@ def main():
             if running and running.get("version") == VERSION:
                 url = f"http://127.0.0.1:{port}/"
                 print(f"Inkwell already running at {url}")
-                if not args.no_browser:
-                    webbrowser.open(url)
+                open_ui(url, how)
                 sys.exit(0)
             if running and ask_shutdown(port):
                 print(f"Replaced an older Inkwell on port {port}")
                 try:
-                    srv = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+                    srv = ThreadingHTTPServer((args.host, port), Handler)
                     break
                 except OSError:
                     pass
@@ -571,8 +811,9 @@ def main():
     SERVER = srv
     url = f"http://127.0.0.1:{port}/"
     print(f"Inkwell serving vault {VAULT}\n  → {url}   (Ctrl+C to stop)")
-    if not args.no_browser:
-        threading.Timer(0.6, lambda: webbrowser.open(url)).start()
+    if not local_only:
+        print(f"  also listening on {args.host}:{port} (password required)")
+    threading.Timer(0.6, lambda: open_ui(url, how)).start()
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
