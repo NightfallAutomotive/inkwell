@@ -672,7 +672,7 @@ Your notes are plain Markdown files in this folder:
 
 `{vault}`
 
-Open **⚙ Settings → Open the guide** (bottom left) for a full how-to.
+Read the [[Inkwell Guide]] for a full how-to. It's also under **⚙ Settings → Open the guide**.
 
 ## Things to try
 - Link notes with double brackets: [[Getting started]]
@@ -691,6 +691,8 @@ Open **⚙ Settings → Open the guide** (bottom left) for a full how-to.
 GETTING_STARTED = """# Getting started
 
 This note is linked from [[Welcome]]. Check the **Backlinks** panel on the right.
+
+New here? The [[Inkwell Guide]] shows how to do everything, from tick boxes to tabs and using Inkwell on your phone.
 
 Embed images with `![[picture.png]]` or paste an image straight into the editor;
 it is saved to `attachments/`.
@@ -780,6 +782,9 @@ def main():
     if fresh:
         (VAULT / "Welcome.md").write_text(WELCOME.format(vault=VAULT), encoding="utf-8")
         (VAULT / "Getting started.md").write_text(GETTING_STARTED, encoding="utf-8")
+        guide = STATIC_DIR / "guide.md"
+        if guide.is_file():
+            shutil.copyfile(guide, VAULT / "Inkwell Guide.md")
 
     srv = None
     for port in range(args.port, args.port + 20):

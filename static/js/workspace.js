@@ -590,6 +590,8 @@ async function followLink(target, heading, from, { newTab = false } = {}) {
     if (!newTab && S.cur && r === S.cur.path) return heading && gotoHeading(heading);
     return openNote(r, { heading: heading || null, newTab });
   }
+  // unresolved: the guide comes from the app; anything else is created as a new note
+  if (cleanName(target).toLowerCase() === 'inkwell guide') return openGuide();
   const name = cleanName(target.split('/').pop());
   if (!name) return;
   const d = target.includes('/') ? normPath(dirOf(target)) : '';
