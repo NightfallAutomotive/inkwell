@@ -91,7 +91,7 @@ def main():
     (appdir / "inkwell.desktop").write_text(
         "[Desktop Entry]\nType=Application\nName=Inkwell\nGenericName=Notes\n"
         "Comment=Markdown notes, linked together\nExec=inkwell\nIcon=inkwell\nTerminal=false\n"
-        "Categories=Office;Utility;TextEditor;\nKeywords=notes;markdown;wiki;journal;\n"
+        "Categories=Office;TextEditor;\nKeywords=notes;markdown;wiki;journal;\n"
         f"StartupWMClass=Inkwell\nX-AppImage-Version={ver}\n")
     shutil.copy(ROOT / "static/brand/skull.svg", appdir / "inkwell.svg")
     for size in (256, 512):
