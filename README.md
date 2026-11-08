@@ -18,7 +18,7 @@ cd inkwell
 ./install.sh                    # or: ./install.sh --vault ~/MyNotes --service
 ```
 
-This installs Inkwell for your user (no root needed): the app goes in `~/.local/share/inkwell`, the `inkwell` command in `~/.local/bin`, and an entry with its icon in your app menu. It opens in its own window when Chromium, Chrome, Brave, Edge or Vivaldi is installed (normal or Flatpak), and in a browser tab otherwise.
+Run it from a normal terminal, not one built into a Flatpak app such as a code editor. This installs Inkwell for your user (no root needed): the app goes in `~/.local/share/inkwell`, the `inkwell` command in `~/.local/bin`, and an entry with its icon in your app menu. It opens in its own window when Chromium, Chrome, Brave, Edge or Vivaldi is installed (normal or Flatpak), and in a browser tab otherwise.
 
 - `--vault DIR` sets the notes folder (default `~/Notes`).
 - `--service` starts Inkwell in the background whenever you log in.

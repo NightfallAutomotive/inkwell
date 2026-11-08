@@ -10,6 +10,12 @@
 # an app-menu entry and icons. Needs python3 (3.8+).
 set -euo pipefail
 
+if [ -f /.flatpak-info ]; then
+  echo "This terminal is running inside a Flatpak app (such as a code editor's built-in terminal)," >&2
+  echo "so Inkwell would be installed into that app's private folders. Run ./install.sh from a normal terminal instead." >&2
+  exit 1
+fi
+
 SRC="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 DATA="${XDG_DATA_HOME:-$HOME/.local/share}"
 APP="$DATA/inkwell"
