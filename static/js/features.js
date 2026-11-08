@@ -48,6 +48,7 @@ const COMMANDS = [
   { id: 'toggle-right', name: 'Toggle right sidebar', fn: toggleRight },
   { id: 'theme', name: 'Toggle light / dark theme', fn: toggleTheme },
   { id: 'settings', name: 'Open settings', key: 'Ctrl+,', fn: openSettings },
+  { id: 'guide', name: 'How to use Inkwell (open the guide)', fn: () => openGuide() },
   { id: 'reload', name: 'Reload vault from disk', fn: () => refreshIndex().then(() => toast('Vault reloaded')) },
   { id: 'back', name: 'Navigate back', key: 'Alt+←', fn: () => goHist(-1) },
   { id: 'forward', name: 'Navigate forward', key: 'Alt+→', fn: () => goHist(1) },

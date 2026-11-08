@@ -121,6 +121,34 @@ $('#set-reset').addEventListener('click', async () => {
   changed({ colours: true });
 });
 $('#set-close').onclick = closeSettings;
+$('#set-guide').onclick = () => { closeSettings(); openGuide(); };
+
+// ------------------------------------------------------------------ guide
+const GUIDE_PATH = 'Inkwell Guide.md';
+const guideVersion = (text) => +((text.match(/^guide-version:\s*(\d+)/m) || [])[1] || 0);
+/** Open the how-to guide, adding it to the vault (or updating an older copy) first. */
+async function openGuide() {
+  let bundled;
+  try { const r = await fetch('guide.md', { cache: 'no-cache' }); if (!r.ok) throw new Error(r.statusText); bundled = await r.text(); }
+  catch (e) { return toast('Could not load the guide: ' + e.message, true); }
+  const existing = S.pathMap.get(GUIDE_PATH.toLowerCase());
+  try {
+    if (!existing) {
+      await api('PUT', 'note', { qs: { path: GUIDE_PATH }, body: { content: bundled, create: true } });
+    } else {
+      const cur = DOCS.has(existing) ? docText(DOCS.get(existing)) : (await api('GET', 'note', { qs: { path: existing } })).content;
+      if (guideVersion(cur) < guideVersion(bundled)) {
+        const doc = DOCS.get(existing), t = doc && tabsOfDoc(doc).find((x) => x.state);
+        if (t) { doc.forceSnap = true; tabReplace(t, 0, tabText(t).length, bundled); await save(doc); }
+        else await api('PUT', 'note', { qs: { path: existing }, body: { content: bundled, snapshot: true } });
+        toast('The guide was updated. Your previous copy is in File recovery.');
+      }
+    }
+  } catch (e) { return toast('Could not add the guide to your vault: ' + e.message, true); }
+  await refreshIndex({ quiet: true });
+  const t = await openNote(existing || GUIDE_PATH, { newTab: !!S.cur });
+  if (t && t.mode === 'source') setTabMode(t, 'live');
+}
 $('#settings').addEventListener('mousedown', (e) => { if (e.target.id === 'settings') closeSettings(); });
 
 applySettings();

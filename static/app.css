@@ -388,6 +388,8 @@ input[type=color].sw-custom { width: 30px; height: 26px; border: 1px solid var(-
 .pair { display: flex; gap: 10px; align-items: center; font-size: 12px; color: var(--fg2); }
 .pair label { display: flex; align-items: center; gap: 5px; }
 .linkish { border: 0; background: none; color: var(--accent); font-size: 12px; padding: 2px 4px; }
+.set-btn { border: 1px solid var(--accent); background: var(--accent-soft); color: var(--fg); border-radius: 6px; padding: 5px 14px; font-weight: 500; }
+.set-btn:hover { background: var(--accent); color: var(--on-accent); }
 .set-foot { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; }
 .set-foot button { border: 1px solid var(--line); background: var(--bg2); border-radius: 6px; padding: 5px 14px; color: var(--fg); }
 .set-foot button:hover { border-color: var(--red); color: var(--red); }

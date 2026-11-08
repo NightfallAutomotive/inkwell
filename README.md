@@ -24,6 +24,8 @@ App-menu entry (optional): `cp inkwell.desktop ~/.local/share/applications/`
 
 ## Features
 
+New to Inkwell? Open **⚙ Settings → Open the guide** for a how-to note covering everything below, with working examples.
+
 - **Editor:** live preview renders Markdown as you type and shows the raw syntax only where your cursor is. Source mode shows plain Markdown and Reading view shows the rendered note. Each tab remembers its own mode.
 - **Tabs and split panes:** open notes in tabs, split panes side by side, drag tabs to reorder them or move them between panes, and resize panes. Your layout is restored when you reopen Inkwell.
 - **Properties:** frontmatter appears as an editable panel of text, list, number, checkbox and date fields. Tags show as chips. Source mode still shows the raw YAML.

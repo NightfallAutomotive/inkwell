@@ -31,7 +31,7 @@ IGNORED = {".trash", ".git", ".obsidian", ".inkwell", "node_modules", ".stfolder
 WRITE_LOCK = threading.Lock()
 
 WIKILINK_RE = re.compile(r"!?\[\[([^\[\]|#\n]*)(#[^\[\]|\n]*)?(\|[^\[\]\n]*)?\]\]")
-TAG_RE = re.compile(r"(?:^|(?<=\s))#([A-Za-z0-9_\-/]*[A-Za-z_\-/][A-Za-z0-9_\-/]*)")
+TAG_RE = re.compile(r"(?:^|(?<=\s))#([A-Za-z0-9_\-/]*[A-Za-z_][A-Za-z0-9_\-/]*)")
 FENCE_RE = re.compile(r"^(```|~~~).*?^\1", re.S | re.M)
 INLINE_CODE_RE = re.compile(r"`[^`\n]*`")
 HTML_CODE_RE = re.compile(r"<(style|script)\b.*?</\1\s*>|<!--.*?-->|<[a-zA-Z/][^>\n]*>", re.S | re.I)
@@ -471,6 +471,8 @@ WELCOME = """# Welcome to Inkwell
 Your notes are plain Markdown files in this folder:
 
 `{vault}`
+
+Open **⚙ Settings → Open the guide** (bottom left) for a full how-to.
 
 ## Things to try
 - Link notes with double brackets: [[Getting started]]

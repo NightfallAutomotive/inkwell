@@ -80,7 +80,7 @@ const TagExt = {
       if (next !== 35) return -1;
       const prev = pos > cx.offset ? cx.char(pos - 1) : -1;
       if (prev !== -1 && !/[\s(]/.test(String.fromCharCode(prev))) return -1;
-      const m = /^#([A-Za-z0-9_\-\/]*[A-Za-z_\-\/][A-Za-z0-9_\-\/]*)/.exec(cx.slice(pos, Math.min(cx.end, pos + 200)));
+      const m = /^#([A-Za-z0-9_\-\/]*[A-Za-z_][A-Za-z0-9_\-\/]*)/.exec(cx.slice(pos, Math.min(cx.end, pos + 200)));
       return m ? cx.addElement(cx.elt('Hashtag', pos, pos + m[0].length)) : -1;
     },
   }],

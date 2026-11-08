@@ -105,7 +105,7 @@ function stripCode(text) {
   return text.replace(/^(```|~~~)[\s\S]*?^\1/gm, '').replace(/<(style|script)\b[\s\S]*?<\/\1\s*>|<!--[\s\S]*?-->|<[a-zA-Z/][^>\n]*>/gi, ' ').replace(/`[^`\n]*`/g, '');
 }
 const WL_RE = /!?\[\[([^\[\]|#\n]*)(#[^\[\]|\n]*)?(\|[^\[\]\n]*)?\]\]/g;
-const TAG_RE = /(?:^|\s)#([A-Za-z0-9_\-\/]*[A-Za-z_\-\/][A-Za-z0-9_\-\/]*)/g;
+const TAG_RE = /(?:^|\s)#([A-Za-z0-9_\-\/]*[A-Za-z_][A-Za-z0-9_\-\/]*)/g;
 function analyse(text) {
   const body = stripCode(text);
   const links = [...body.matchAll(WL_RE)].map((m) => m[1].trim()).filter(Boolean);
@@ -174,9 +174,9 @@ marked.use({
     },
     {
       name: 'tag', level: 'inline',
-      start(src) { const m = /(^|[\s(])#[A-Za-z0-9_\-\/]*[A-Za-z_\-\/]/.exec(src); return m ? m.index + m[1].length : undefined; },
+      start(src) { const m = /(^|[\s(])#[A-Za-z0-9_\-\/]*[A-Za-z_]/.exec(src); return m ? m.index + m[1].length : undefined; },
       tokenizer(src) {
-        const m = /^#([A-Za-z0-9_\-\/]*[A-Za-z_\-\/][A-Za-z0-9_\-\/]*)/.exec(src);
+        const m = /^#([A-Za-z0-9_\-\/]*[A-Za-z_][A-Za-z0-9_\-\/]*)/.exec(src);
         if (m) return { type: 'tag', raw: m[0], tag: m[1] };
       },
       renderer(t) { return `<a class="tag" href="#" data-tag="${esc(t.tag.toLowerCase())}">#${esc(t.tag)}</a>`; },
