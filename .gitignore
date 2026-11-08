@@ -4,3 +4,4 @@ flatpak/build/
 flatpak/repo/
 .flatpak-builder/
 *.flatpak
+dist/

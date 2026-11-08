@@ -27,6 +27,16 @@ Run it from a normal terminal, not one built into a Flatpak app such as a code e
 
 In Chrome or Edge you can also use **Install Inkwell** in the address bar to get a standalone app window.
 
+### As an AppImage
+
+To make a single file that runs on most Linux desktops with nothing to install:
+
+```bash
+python3 tools/build_appimage.py      # makes dist/Inkwell-<version>-x86_64.AppImage
+```
+
+The AppImage bundles its own Python, so the computer running it doesn't need one. It opens Inkwell in a Chromium-family app window if one is installed, otherwise in a browser tab. To run it, make it executable (`chmod +x Inkwell-*.AppImage`) and double-click it. Gear Lever or AppImageLauncher can add it to the app menu. Settings and notes are the same as the `install.sh` version (`~/.config/inkwell`, `~/Notes`).
+
 ### As a Flatpak
 
 Inkwell can also be built as a Flatpak that runs in its own window and shows up in GNOME Software. See [flatpak/README.md](flatpak/README.md).
