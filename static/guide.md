@@ -1,5 +1,5 @@
 ---
-guide-version: 2
+guide-version: 3
 tags:
   - inkwell
 ---
@@ -187,7 +187,69 @@ The ⚙ button on the far left (or `Ctrl+,`) changes text size, the note font, s
 
 ## Using Inkwell on your phone or online
 
-Inkwell can be reached from your phone, a laptop or anywhere else. Set a password with `inkwell --set-password`, then follow the step-by-step guide in `docs/online.md` (in the Inkwell folder, or on GitHub). Tailscale is the easiest and most private way. Once it's working, use your phone browser's *Add to Home screen* for an app icon.
+Your notes stay on this computer. Inkwell keeps running here, and your other devices connect to it. Run the commands below in a normal terminal.
+
+> [!warning] Set a password first
+> Until a password is set, Inkwell only works on this computer and refuses connections from anywhere else. This keeps your notes safe.
+
+### Step 1: set a password
+
+```bash
+inkwell --set-password
+```
+
+Type it twice. Use at least 8 characters, and don't reuse a password from somewhere else. Then close Inkwell and open it again. From now on every device, this one included, shows a sign-in page, and each sign-in lasts 30 days. To sign out, press `Ctrl+P` and choose **Sign out**.
+
+- [ ] Password set
+
+### Step 2: keep Inkwell running
+
+Your other devices can only reach Inkwell while it's running here, so have it start whenever you log in:
+
+```bash
+cd ~/Documents/GitHub/inkwell && ./install.sh --service
+```
+
+If this computer should serve your notes even when nobody is logged in, also run `loginctl enable-linger $USER` once.
+
+- [ ] Inkwell starts at login
+
+### Step 3: connect your devices with Tailscale
+
+Tailscale is the easiest and safest way in. It links your own devices privately, so nobody else on the internet can even see Inkwell, and you don't have to change anything on your router. It's free for personal use.
+
+1. Install Tailscale from tailscale.com on **this computer** and on your **phone** (from its app store), then sign in to the same account on both.
+2. On this computer, run:
+   ```bash
+   tailscale serve --bg 8473
+   ```
+3. Tailscale shows an address like `https://my-pc.tail1234.ts.net`. Open it on your phone and sign in with your Inkwell password.
+
+- [ ] Tailscale installed on both
+- [ ] Opened Inkwell on my phone
+
+### Step 4: add it to your phone's home screen
+
+- **Android (Chrome):** ⋮ menu → *Add to Home screen* (or *Install app*).
+- **iPhone (Safari):** Share button → *Add to Home Screen*.
+
+Inkwell then opens full screen with its own icon, like any other app.
+
+### Other ways in
+
+| Option | Good for | What it takes |
+| --- | --- | --- |
+| **Tailscale** (above) | Your own phone and laptops | An app on each device |
+| **Cloudflare Tunnel** | Any browser anywhere, with nothing to install on it | A free Cloudflare account. Run `cloudflared tunnel --url http://localhost:8473` to try it out. |
+| **Your own domain** | You already run a server or VPS | Caddy as a reverse proxy, which handles HTTPS for you |
+| **Home Wi-Fi only** | Quick use on a network you trust | `inkwell --host 0.0.0.0`. This isn't encrypted, so use it at home only. |
+
+The full instructions for each one are in `docs/online.md` in the Inkwell folder.
+
+> [!tip] Good to know
+> - Too many wrong passwords pause sign-ins for 10 minutes.
+> - Running `inkwell --set-password` again changes the password and signs out every device.
+> - Back up your whole vault folder. It holds your notes, plus Inkwell's bookmarks and file history in `.inkwell`.
 
 ## All the shortcuts
 

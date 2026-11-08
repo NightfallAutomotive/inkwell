@@ -28,7 +28,7 @@ export {
 export { search, searchKeymap, highlightSelectionMatches, openSearchPanel } from '@codemirror/search';
 
 // Code-fence languages
-import { LanguageDescription, StreamLanguage } from '@codemirror/language';
+import { LanguageDescription, LanguageSupport, StreamLanguage } from '@codemirror/language';
 import { javascript } from '@codemirror/lang-javascript';
 import { python } from '@codemirror/lang-python';
 import { css } from '@codemirror/lang-css';
@@ -48,5 +48,6 @@ export const codeLanguages = [
   L('HTML', ['html', 'htm', 'xml', 'svg'], html()),
   L('JSON', ['json', 'jsonc'], json()),
   L('YAML', ['yaml', 'yml'], yaml()),
-  L('Shell', ['sh', 'bash', 'zsh', 'shell', 'console'], StreamLanguage.define(shell)),
+  // LanguageDescription needs a LanguageSupport; a bare Language crashes the Markdown code-block parser
+  L('Shell', ['sh', 'bash', 'zsh', 'shell', 'console'], new LanguageSupport(StreamLanguage.define(shell))),
 ];

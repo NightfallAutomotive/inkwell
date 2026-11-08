@@ -118,7 +118,7 @@ function analyse(text) {
     const tm = fm[0].match(/^tags?:[ \t]*(.*)$/m);
     if (tm) {
       if (tm[1].trim()) tm[1].replace(/[\[\]]/g, '').split(/[,\s]+/).forEach((t) => t && tags.add(t.replace(/^#|['"]/g, '').toLowerCase()));
-      else { const after = fm[0].slice(fm[0].indexOf(tm[0]) + tm[0].length); for (const l of after.split('\n').slice(1)) { const mm = l.match(/^\s*-\s*(.+)$/); if (!mm) break; tags.add(mm[1].replace(/^#|['"]/g, '').trim().toLowerCase()); } }
+      else { const after = fm[0].slice(fm[0].indexOf(tm[0]) + tm[0].length); for (const l of after.split('\n').slice(1)) { const mm = l.match(/^\s*-\s+(.+)$/); /* a space after the dash, so the closing --- isn't an item */ if (!mm) break; tags.add(mm[1].replace(/^#|['"]/g, '').trim().toLowerCase()); } }
     }
   }
   return { links, tags: [...tags].sort() };
