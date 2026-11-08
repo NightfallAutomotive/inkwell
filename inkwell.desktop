@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Inkwell
+Comment=Local Markdown notes
+Exec=/home/Nightfall/Documents/GitHub/inkwell/inkwell.sh
+Icon=accessories-text-editor
+Terminal=false
+Categories=Office;Utility;
