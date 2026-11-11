@@ -187,6 +187,89 @@ def rel_of(p: Path) -> str:
     return p.relative_to(VAULT).as_posix()
 
 
+def pretty_path(p: Path) -> str:
+    home = Path.home().resolve()  # /home may be a link to /var/home
+    p = p.resolve()
+    if p == home:
+        return "~"
+    return "~/" + p.relative_to(home).as_posix() if home in p.parents else str(p)
+
+
+def pick_dir(raw: str) -> Path:
+    """A folder the notes may live in: anywhere inside the home folder, but not the home folder itself."""
+    home = Path.home().resolve()
+    p = Path((raw or "").strip() or "~").expanduser()
+    if not p.is_absolute():
+        p = home / p
+    p = p.resolve()
+    if home not in p.parents and p != home:
+        raise PermissionError("Pick a folder inside your home folder")
+    return p
+
+
+def list_dirs(raw: str):
+    p = pick_dir(raw)
+    while not p.is_dir() and p != Path.home().resolve():  # typed a folder that doesn't exist yet
+        p = p.parent
+    dirs = []
+    try:
+        for e in sorted(os.scandir(p), key=lambda e: e.name.lower()):
+            if e.name.startswith(".") or e.name in IGNORED:
+                continue
+            try:
+                if e.is_dir():
+                    dirs.append(e.name)
+            except OSError:
+                pass
+    except OSError:
+        pass
+    home = Path.home().resolve()
+    return {"path": str(p), "display": pretty_path(p), "parent": str(p.parent) if p != home else None,
+            "dirs": dirs, "isVault": p == VAULT}
+
+
+def copy_vault(dest: Path):
+    """Copy every file in the current vault into dest, never overwriting what's already there."""
+    copied = skipped = 0
+    for root, dirs, fnames in os.walk(VAULT):
+        rp = Path(root)
+        dirs[:] = [d for d in dirs if d != TRASH]
+        target = dest / rp.relative_to(VAULT)
+        target.mkdir(parents=True, exist_ok=True)
+        for f in fnames:
+            if f.endswith(".tmp"):
+                continue
+            out = target / f
+            if out.exists():
+                skipped += 1
+                continue
+            shutil.copy2(rp / f, out)
+            copied += 1
+    return copied, skipped
+
+
+def switch_vault(raw: str, copy: bool):
+    global VAULT
+    dest = pick_dir(raw)
+    if dest == Path.home().resolve():
+        raise PermissionError("Pick a folder inside your home folder, not the home folder itself")
+    with WRITE_LOCK:
+        if dest == VAULT:
+            return {"ok": True, "vault": str(VAULT), "copied": 0, "skipped": 0}
+        copied = skipped = 0
+        if copy:
+            if VAULT in dest.parents or dest in VAULT.parents:
+                raise PermissionError("The new folder can't be inside your current notes folder, or the other way round")
+            dest.mkdir(parents=True, exist_ok=True)
+            copied, skipped = copy_vault(dest)
+        else:
+            dest.mkdir(parents=True, exist_ok=True)
+        VAULT = dest
+        CONFIG["vault"] = str(dest)
+        save_config()
+    return {"ok": True, "vault": str(VAULT), "copied": copied, "skipped": skipped}
+
+
 def strip_code(text: str) -> str:
     text = FENCE_RE.sub("", text)
     text = HTML_CODE_RE.sub(" ", text)  # CSS colours like #5e81ac aren't tags
@@ -268,7 +351,7 @@ def build_index():
         })
     return {
         "vault": str(VAULT),
-        "vaultDisplay": "~/" + VAULT.relative_to(Path.home()).as_posix() if Path.home() in VAULT.parents else str(VAULT),
+        "vaultDisplay": pretty_path(VAULT),
         "notes": out,
         "folders": folders,
         "files": [rel_of(p) for p in files],
@@ -543,6 +626,13 @@ class Handler(BaseHTTPRequestHandler):
 
         if ep == "index" and method == "GET":
             return self.send_json(build_index())
+
+        if ep == "dirs" and method == "GET":
+            return self.send_json(list_dirs(qs.get("path") or str(VAULT.parent)))
+
+        if ep == "vault" and method == "POST":
+            body = self.body_json()
+            return self.send_json(switch_vault(str(body.get("path", "")), bool(body.get("copy"))))
 
         if ep == "search" and method == "GET":
             return self.send_json(search(qs.get("q", "")))

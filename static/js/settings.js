@@ -92,6 +92,7 @@ function renderSettings() {
   const c = SET.custom[theme] || NORD[theme];
   $('#set-bg').value = c.bg; $('#set-fg').value = c.fg;
   $('#set-bgreset').hidden = !SET.custom[theme];
+  renderVaultRow();
 }
 
 function changed({ colours = false } = {}) { saveSettings(); applySettings(); renderSettings(); if (colours) themeChangedSoon(); else for (const p of W.panes) p.view.requestMeasure(); }
@@ -122,6 +123,65 @@ $('#set-reset').addEventListener('click', async () => {
 });
 $('#set-close').onclick = closeSettings;
 $('#set-guide').onclick = () => { closeSettings(); openGuide(); };
+
+// ------------------------------------------------------------------ notes folder
+const VP = { path: '', busy: false, typed: false };
+function renderVaultRow() { $('#set-vault-cur').textContent = S.index?.vaultDisplay || S.index?.vault || ''; }
+async function vpLoad(path) {
+  let d;
+  try { d = await api('GET', 'dirs', { qs: path ? { path } : {} }); } catch (e) { return toast('Could not list folders: ' + e.message, true); }
+  VP.path = d.path; VP.typed = false;
+  $('#vp-path').value = d.display;
+  $('#vp-list').innerHTML = (d.parent ? `<button class="vp-up" data-p="${esc(d.parent)}">↑ Up one folder</button>` : '')
+    + (d.dirs.length ? d.dirs.map((n) => `<button data-p="${esc(d.path + '/' + n)}">📁 ${esc(n)}</button>`).join('') : '<div class="vp-empty">No folders in here</div>');
+  $('#vp-use').disabled = d.isVault;
+  $('#vp-use').title = d.isVault ? 'Your notes are already saved here' : '';
+}
+$('#set-vault-change').addEventListener('click', () => { const box = $('#set-vault-pick'); box.hidden = !box.hidden; if (!box.hidden) vpLoad(''); });
+$('#vp-cancel').addEventListener('click', () => { $('#set-vault-pick').hidden = true; });
+$('#vp-list').addEventListener('click', (e) => { const b = e.target.closest('button[data-p]'); if (b) vpLoad(b.dataset.p); });
+$('#vp-path').addEventListener('input', () => { VP.typed = true; $('#vp-use').disabled = false; });
+$('#vp-path').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); vpLoad($('#vp-path').value); }
+  if (e.key === 'Escape') { e.stopPropagation(); $('#set-vault-pick').hidden = true; }
+});
+$('#vp-new').addEventListener('click', async () => {
+  const name = (await ask('Name of the new folder', 'Notes', { ok: 'Create' }) || '').trim();
+  if (!name) return;
+  if (/[\\/]/.test(name) || name.startsWith('.')) return toast('Use a plain folder name, without slashes or a leading dot.', true);
+  // nothing is created on disk until "Use this folder"; just point the picker at it
+  VP.path = VP.path + '/' + name; VP.typed = false;
+  $('#vp-path').value = $('#vp-path').value.replace(/\/?$/, '/') + name;
+  $('#vp-list').innerHTML = '<div class="vp-empty">New folder — created when you press “Use this folder”</div>';
+  $('#vp-use').disabled = false;
+});
+$('#vp-use').addEventListener('click', async () => {
+  if (VP.busy) return;
+  // a path typed but not yet opened with Enter still counts
+  const shown = $('#vp-path').value.trim();
+  const target = VP.typed && shown ? shown : VP.path;
+  const copy = $('#vp-copy').checked;
+  const ok = await ask(copy
+    ? `Copy your notes into ${shown} and save new notes there from now on? Your current folder stays as it is.`
+    : `Save notes in ${shown} from now on? Your current notes stay where they are and won't show in Inkwell.`, null, { ok: 'Use this folder' });
+  if (!ok) return;
+  VP.busy = true; $('#vp-use').disabled = true; $('#vp-use').textContent = copy ? 'Copying…' : 'Switching…';
+  try {
+    await saveAll();
+    const r = await api('POST', 'vault', { body: { path: target, copy } });
+    // open tabs and the last note belong to the old folder
+    for (const k of ['workspace', 'last', 'open']) store.set(k, null);
+    let msg = 'Notes folder changed.';
+    if (copy) msg += ` ${r.copied} file${r.copied === 1 ? '' : 's'} copied` + (r.skipped ? `, ${r.skipped} left alone because a file with the same name was already there.` : '.');
+    sessionStorage.setItem('iw.flash', msg);
+    location.hash = ''; location.reload();
+  } catch (e) {
+    toast('Could not change the notes folder: ' + e.message, true);
+  } finally {
+    VP.busy = false; $('#vp-use').disabled = false; $('#vp-use').textContent = 'Use this folder';
+  }
+});
+try { const m = sessionStorage.getItem('iw.flash'); if (m) { sessionStorage.removeItem('iw.flash'); setTimeout(() => toast(m, false, 8000), 800); } } catch {}
 
 // ------------------------------------------------------------------ guide
 const GUIDE_PATH = 'Inkwell Guide.md';

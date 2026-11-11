@@ -149,6 +149,16 @@
     <div class="set-row"><div class="lbl"><b>Background and text</b><small>For the <span id="set-bgtheme">dark</span> theme. Other shades follow from these.</small></div>
       <div class="pair"><label>Background <input type="color" class="sw-custom" id="set-bg"></label><label>Text <input type="color" class="sw-custom" id="set-fg"></label><button class="linkish" id="set-bgreset">Use Nord</button></div></div>
 
+    <h3>Notes folder</h3>
+    <div class="set-row"><div class="lbl"><b>Where your notes are saved</b><small id="set-vault-cur"></small></div>
+      <button class="set-btn" id="set-vault-change">Change…</button></div>
+    <div id="set-vault-pick" class="vault-pick" hidden>
+      <input id="vp-path" spellcheck="false" autocomplete="off" aria-label="Folder">
+      <div id="vp-list" class="vp-list" role="listbox"></div>
+      <label class="vp-copy"><input type="checkbox" id="vp-copy" checked> Copy my current notes into this folder <small>(your old folder is left as it is)</small></label>
+      <div class="vp-foot"><button id="vp-new" class="linkish">New folder here</button><span class="grow"></span><button id="vp-cancel">Cancel</button><button id="vp-use" class="primary">Use this folder</button></div>
+    </div>
+
     <h3>Help</h3>
     <div class="set-row"><div class="lbl"><b>How to use Inkwell</b><small>Tick boxes, links, tags, tabs, shortcuts and everything else, as a note you can keep</small></div>
       <button class="set-btn" id="set-guide">Open the guide</button></div>

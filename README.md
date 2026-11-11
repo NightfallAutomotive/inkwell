@@ -47,7 +47,7 @@ Inkwell can also be built as a Flatpak that runs in its own window and shows up 
 inkwell                  # start (or switch to) Inkwell
 inkwell ~/OtherVault     # open a different vault
 inkwell --open tab       # in a browser tab instead of an app window (or: none)
-inkwell --set-vault DIR  # change the default vault
+inkwell --set-vault DIR  # change the default vault (or use ⚙ Settings → Notes folder)
 inkwell --set-password   # require a password (needed for online use)
 inkwell --help
 ```
