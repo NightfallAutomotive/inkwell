@@ -90,7 +90,7 @@ def session_valid(token: str) -> bool:
 
 
 LOGIN_PAGE = """<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sign in · Inkwell</title><link rel="icon" type="image/svg+xml" href="/brand/skull.svg"><link rel="manifest" href="/manifest.webmanifest">
+<title>Sign in · Inkwell</title><link rel="icon" type="image/svg+xml" href="/brand/skull.svg"><link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/brand/apple-touch-icon.png">
 <meta name="theme-color" content="#2e3440">
 <style>
 :root{color-scheme:dark;--bg:#2e3440;--bg2:#3b4252;--fg:#eceff4;--fg3:#8e9ab0;--accent:#88c0d0;--red:#bf616a}
@@ -553,6 +553,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send_json({"error": "Inkwell only answers on localhost until a password is set (run: inkwell --set-password)"}, 403)
             if method != "GET" and not self.check_origin():
                 return self.send_json({"error": "bad origin"}, 403)
+            if path in ("/apple-touch-icon.png", "/apple-touch-icon-precomposed.png"):  # where iPhones look by default
+                path = "/brand/apple-touch-icon.png"
             public = path in ("/login", "/api/login", "/api/ping", "/manifest.webmanifest") or path.startswith("/brand/")
             if not public and not self.session_ok() and not (path == "/api/shutdown" and self.local_cli()):
                 if path.startswith("/api/"):
