@@ -144,6 +144,11 @@ $('#palette-input').addEventListener('keydown', (e) => {
   } else if (e.key === 'Enter') { e.preventDefault(); newTabNext = e.ctrlKey || e.metaKey; acceptPalette(PAL.sel, e.shiftKey); }
   else if (e.key === 'Escape') { e.preventDefault(); closePalette(); }
 });
+$('#palette-list').addEventListener('mousemove', (e) => {
+  const p = e.target.closest('.pi'); if (!p || +p.dataset.i === PAL.sel) return;
+  PAL.sel = +p.dataset.i;
+  $$('#palette-list .pi').forEach((x, i) => x.classList.toggle('sel', i === PAL.sel));
+});
 $('#palette-list').addEventListener('click', (e) => { const p = e.target.closest('.pi'); if (p) { newTabNext = e.ctrlKey || e.metaKey; acceptPalette(+p.dataset.i); } });
 $('#palette').addEventListener('mousedown', (e) => { if (e.target.id === 'palette') closePalette(); });
 

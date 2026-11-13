@@ -210,6 +210,10 @@ mark { background: var(--accent-soft); color: var(--fg); border-radius: 2px; pad
 .cm-tooltip-autocomplete > ul { font: 13px var(--sans) !important; max-height: 280px !important; padding: 4px !important; min-width: 240px; }
 .cm-tooltip-autocomplete > ul > li { padding: 4px 10px !important; border-radius: 5px; display: flex; gap: 10px; }
 .cm-tooltip-autocomplete > ul > li[aria-selected] { background: var(--accent-soft) !important; color: var(--fg) !important; }
+/* the row under the mouse lights up; the keyboard highlight steps aside while the mouse is over the list */
+.cm-tooltip-autocomplete > ul > li { cursor: pointer; }
+.cm-tooltip-autocomplete > ul:hover > li[aria-selected]:not(:hover) { background: none !important; }
+.cm-tooltip-autocomplete > ul > li:hover { background: var(--accent-soft) !important; color: var(--fg) !important; }
 .cm-completionLabel { flex: 1; }
 .cm-completionDetail { color: var(--fg3); font-style: normal !important; font-size: 12px; margin-left: auto; }
 .cm-completionMatchedText { color: var(--accent); text-decoration: none !important; font-weight: 600; }

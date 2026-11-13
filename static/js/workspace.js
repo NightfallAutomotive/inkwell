@@ -230,15 +230,14 @@ class Pane {
     // title → rename
     this.title.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === 'ArrowDown') { e.preventDefault(); this.view.focus(); this.view.dispatch({ selection: { anchor: firstBodyPos(this.view.state) } }); }
-      if (e.key === 'Escape') { this.title.value = base(this.active.doc.path); this.view.focus(); }
+      if (e.key === 'Escape') { this.showTitle(); this.view.focus(); }
     });
     this.title.addEventListener('blur', async () => {
-      delete this.title.dataset.fresh; this.title.placeholder = '';
       const t = this.active; if (!t?.doc) return;
       const name = cleanName(this.title.value);
-      if (!name || name === base(t.doc.path)) { this.title.value = base(t.doc.path); return; }
+      if (!name || name === base(t.doc.path)) return this.showTitle();
       const ok = await doRename(t.doc.path, join(dirOf(t.doc.path), name + '.md'), true);
-      if (!ok) this.title.value = base(t.doc.path);
+      if (!ok) this.showTitle();
     });
     // reading view: links, tasks, embeds
     this.preview.addEventListener('click', (e) => {
@@ -308,6 +307,13 @@ class Pane {
     saveLayout();
   }
 
+  /** Note name in the title box; an "Untitled" name shows greyed out, ready to be typed over. */
+  showTitle() {
+    const name = this.active?.doc ? base(this.active.doc.path) : '';
+    const untitled = /^Untitled( \d+)?$/.test(name);
+    this.title.value = untitled ? '' : name;
+    this.title.placeholder = untitled ? name : '';
+  }
   /** Bring the DOM in line with the active tab. */
   show() {
     const t = this.active;
@@ -317,7 +323,7 @@ class Pane {
     this.modeSeg.style.visibility = has ? '' : 'hidden';
     this.bmBtn.style.visibility = has ? '' : 'hidden';
     if (has) {
-      if (!(this.title.dataset.fresh && document.activeElement === this.title)) this.title.value = base(t.doc.path);
+      if (document.activeElement !== this.title) this.showTitle();
       this.crumbs.innerHTML = t.doc.path.split('/').map((p, i, a) => (i === a.length - 1 ? `<span class="leaf-name">${esc(base(t.doc.path))}</span>` : `<span>${esc(p)}</span>`)).join(' / ');
       this.saveState.textContent = t.doc.dirty ? 'Editing…' : '';
       this.updateStar();

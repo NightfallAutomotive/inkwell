@@ -649,7 +649,7 @@ const SLASH = [
   { label: 'Highlight', insert: '==', after: '==' }, { label: 'Strikethrough', insert: '~~', after: '~~' },
   { label: 'Inline code', insert: '`', after: '`' },
   { label: "Today's date", text: () => today() }, { label: 'Current time', text: () => nowTime() },
-  { label: 'Add property', run: () => addProperty(T()) },
+  { label: 'Add property', run: () => addProperty(T()), boost: -5 },  // rarely used: below the writing items
   { label: 'Insert template…', run: () => openPalette('templates') },
 ];
 function slashSource(ctx) {
@@ -659,7 +659,7 @@ function slashSource(ctx) {
   if (inCode(ctx.state, slash)) return null;
   const apply = (fn) => (view, c, from, to) => { view.dispatch({ changes: { from: from - 1, to } }); fn(view, from - 1); };
   const options = SLASH.map((s) => ({
-    label: s.label, type: 'slash',
+    label: s.label, type: 'slash', boost: s.boost || 0,
     apply: apply((view, pos) => {
       if (s.prefix) setLinePrefix(view, s.prefix, pos);
       else if (s.text) view.dispatch({ changes: { from: pos, insert: s.text() }, selection: { anchor: pos + s.text().length } });
@@ -781,7 +781,7 @@ const baseExtensions = [
   closeBrackets(),
   autocompletion({ override: [wikiSource, tagSource, slashSource], icons: false, activateOnTyping: true, maxRenderedOptions: 60 }),
   search({ top: true }),
-  placeholder('Start writing…   [[ to link · / for commands'),
+  placeholder('Press / for commands'),
   keymap.of([...inkKeymap, ...closeBracketsKeymap, ...searchKeymap, ...historyKeymap, ...defaultKeymap]),
   editorEvents,
   EditorView.contentAttributes.of({ spellcheck: 'true', autocorrect: 'on', autocapitalize: 'sentences' }),
