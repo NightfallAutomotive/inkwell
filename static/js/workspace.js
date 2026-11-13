@@ -233,6 +233,7 @@ class Pane {
       if (e.key === 'Escape') { this.title.value = base(this.active.doc.path); this.view.focus(); }
     });
     this.title.addEventListener('blur', async () => {
+      delete this.title.dataset.fresh; this.title.placeholder = '';
       const t = this.active; if (!t?.doc) return;
       const name = cleanName(this.title.value);
       if (!name || name === base(t.doc.path)) { this.title.value = base(t.doc.path); return; }
@@ -316,7 +317,7 @@ class Pane {
     this.modeSeg.style.visibility = has ? '' : 'hidden';
     this.bmBtn.style.visibility = has ? '' : 'hidden';
     if (has) {
-      this.title.value = base(t.doc.path);
+      if (!(this.title.dataset.fresh && document.activeElement === this.title)) this.title.value = base(t.doc.path);
       this.crumbs.innerHTML = t.doc.path.split('/').map((p, i, a) => (i === a.length - 1 ? `<span class="leaf-name">${esc(base(t.doc.path))}</span>` : `<span>${esc(p)}</span>`)).join(' / ');
       this.saveState.textContent = t.doc.dirty ? 'Editing…' : '';
       this.updateStar();

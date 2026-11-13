@@ -330,7 +330,12 @@ async function createNote(path, content = '', { focusTitle = false, newTab = fal
   const t = await openNote(path, { newTab });
   if (!t) return;
   if (t.mode === 'read') setTabMode(t, t.lastEdit || 'live');
-  if (focusTitle) { t.pane.title.focus(); t.pane.title.select(); } else { t.pane.view.focus(); t.pane.view.dispatch({ selection: { anchor: t.pane.view.state.doc.length } }); }
+  if (focusTitle) {
+    // empty name box with a grey "Untitled" behind it; leaving it empty keeps that name
+    const el = t.pane.title;
+    el.placeholder = base(path); el.value = ''; el.dataset.fresh = '1';
+    el.focus();
+  } else { t.pane.view.focus(); t.pane.view.dispatch({ selection: { anchor: t.pane.view.state.doc.length } }); }
   return t;
 }
 async function newNote(folder) {

@@ -159,6 +159,7 @@ mark { background: var(--accent-soft); color: var(--fg); border-radius: 2px; pad
 .doc:not(.empty) .empty-state { display: none; }
 .edit-scroll, .read-scroll { flex: 1; min-width: 0; overflow-y: auto; }
 .sheet { max-width: 780px; margin: 0 auto; padding: 26px 40px 40vh; }
+.leaf .title::placeholder { color: var(--fg3); opacity: .6; }
 .leaf .title { width: 100%; border: 0; background: none; outline: none; font: 700 calc(var(--note-size) * 1.75)/1.3 var(--sans); padding: 0 0 6px; color: var(--fg); }
 .inline-title { font: 700 calc(var(--note-size) * 1.75)/1.3 var(--sans); margin: 0 0 .5em; }
 .empty-state { margin: auto; text-align: center; color: var(--fg3); padding: 20px; }
