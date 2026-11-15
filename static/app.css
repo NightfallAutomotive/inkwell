@@ -547,11 +547,12 @@ input[type=color].sw-custom { width: 30px; height: 26px; border: 1px solid var(-
 }
 
 @media (max-width: 800px) {
-  #app, #app.no-left, #app.no-right { grid-template-columns: 44px 0 0 1fr 0 0; }
-  #app.show-left-mobile { grid-template-columns: 44px 1fr 0 0 0 0; }
+  /* bars hidden on a wider screen (e.g. a phone turned sideways) must not stop them opening here */
+  #app, #app.no-left, #app.no-right, #app.no-left.no-right { grid-template-columns: 44px 0 0 1fr 0 0; }
+  #app.show-left-mobile, #app.show-left-mobile.no-left.no-right { grid-template-columns: 44px 1fr 0 0 0 0; }
   #left, #right, .resizer { display: none; }
   #app.show-left-mobile #left { display: flex; }
-  #app.show-right-mobile { grid-template-columns: 44px 0 0 0 0 1fr; }
+  #app.show-right-mobile, #app.show-right-mobile.no-left.no-right { grid-template-columns: 44px 0 0 0 0 1fr; }
   #app.show-right-mobile #right { display: flex; border-left: 0; }
   #app.show-left-mobile #main, #app.show-right-mobile #main { display: none; }
   .sheet { padding-left: 16px; padding-right: 16px; }
