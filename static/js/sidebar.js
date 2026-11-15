@@ -46,17 +46,95 @@ function buildTree() {
   return root;
 }
 
+// ------------------------------------------------------------------ folder pins & order
+// Saved in the vault (.inkwell/folders.json) so they follow the notes to other devices.
+// pinned: folder paths shown first in their parent; order: parent path -> child folder names.
+async function loadFolderPrefs() {
+  try { const d = await api('GET', 'config/folders'); S.folders = { pinned: Array.isArray(d?.pinned) ? d.pinned : [], order: d?.order && typeof d.order === 'object' ? d.order : {} }; }
+  catch { S.folders = { pinned: [], order: {} }; }
+}
+function saveFolderPrefs() {
+  api('PUT', 'config/folders', { body: S.folders }).catch((e) => toast('Could not save the folder order: ' + e.message, true));
+  renderTree();
+}
+const isPinned = (path) => S.folders.pinned.includes(path);
+const leafName = (p) => p.split('/').pop();
+/** A folder's subfolders in display order: pinned first, then your order, then A→Z. */
+function sortedFolders(node) {
+  const order = S.folders.order[node.path] || [];
+  const rank = (f) => { const i = order.indexOf(f.name); return i < 0 ? 1e9 : i; };
+  return [...node.folders.values()].sort((a, b) => (isPinned(b.path) - isPinned(a.path)) || (rank(a) - rank(b))
+    || a.name.localeCompare(b.name, undefined, { numeric: true }));
+}
+function folderNode(path) {
+  let node = buildTree();
+  for (const seg of path ? path.split('/') : []) { node = node.folders.get(seg); if (!node) return null; }
+  return node;
+}
+/** Put folder `src` before or after its sibling `target`; it joins the target's pinned/unpinned group. */
+function placeFolder(src, target, where) {
+  const parent = dirOf(src), node = folderNode(parent);
+  if (!node || src === target) return;
+  const list = sortedFolders(node).map((f) => f.path).filter((p) => p !== src);
+  const i = list.indexOf(target);
+  if (i < 0) return;
+  list.splice(where === 'after' ? i + 1 : i, 0, src);
+  S.folders.pinned = S.folders.pinned.filter((p) => p !== src);
+  if (isPinned(target)) S.folders.pinned.push(src);
+  S.folders.order[parent] = list.map(leafName);
+  saveFolderPrefs();
+}
+/** Siblings in the same group (pinned or not), for Move up / Move down. */
+function folderGroup(path) {
+  const node = folderNode(dirOf(path));
+  return node ? sortedFolders(node).map((f) => f.path).filter((p) => isPinned(p) === isPinned(path)) : [path];
+}
+function moveFolder(path, step) {
+  const g = folderGroup(path), i = g.indexOf(path), j = i + step;
+  if (i < 0 || j < 0 || j >= g.length) return;
+  placeFolder(path, g[j], step > 0 ? 'after' : 'before');
+}
+function togglePin(path) {
+  const pin = !isPinned(path);
+  S.folders.pinned = S.folders.pinned.filter((p) => p !== path);
+  const list = S.folders.order[dirOf(path)];
+  if (list) S.folders.order[dirOf(path)] = list.filter((n) => n !== leafName(path));  // pinned: end of the pinned group; unpinned: back to A→Z
+  if (pin) {
+    // keep the folders already pinned in their places, then this one
+    const node = folderNode(dirOf(path));
+    const ahead = node ? sortedFolders(node).filter((f) => isPinned(f.path)).map((f) => f.name) : [];
+    S.folders.order[dirOf(path)] = [...ahead, leafName(path), ...(S.folders.order[dirOf(path)] || []).filter((n) => !ahead.includes(n))];
+    S.folders.pinned.push(path);
+  }
+  saveFolderPrefs();
+}
+/** Keep pins and order pointing at the right folders after a rename or move. */
+function remapFolderPrefs(remap, from, to) {
+  const P = S.folders; let changed = false;
+  P.pinned = P.pinned.map((p) => { const n = remap(p); if (n !== p) changed = true; return n; });
+  const order = {};
+  for (const [k, v] of Object.entries(P.order)) { const nk = k ? remap(k) : k; if (nk !== k) changed = true; order[nk] = v; }
+  const list = order[dirOf(from)];
+  if (list?.includes(leafName(from))) {
+    changed = true;
+    order[dirOf(from)] = dirOf(from) === dirOf(to) ? list.map((n) => (n === leafName(from) ? leafName(to) : n)) : list.filter((n) => n !== leafName(from));
+  }
+  P.order = order;
+  return changed;
+}
+
 function renderTree() {
   const sort = $('#sort').value;
   const cmp = (a, b) => (sort === 'name' ? a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }) : (b[sort] || 0) - (a[sort] || 0));
   const frag = document.createDocumentFragment();
   const walk = (node, container) => {
-    for (const f of [...node.folders.values()].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))) {
+    for (const f of sortedFolders(node)) {
       const open = S.open.has(f.path);
       const row = document.createElement('div');
-      row.className = 'ti folder' + (open ? ' open' : '');
+      row.className = 'ti folder' + (open ? ' open' : '') + (isPinned(f.path) ? ' pinned' : '');
       row.dataset.path = f.path; row.dataset.type = 'folder'; row.draggable = true;
-      row.innerHTML = `<span class="tw">▶</span><span class="nm">${esc(f.name)}</span>`;
+      row.innerHTML = `<span class="tw">▶</span><span class="nm">${esc(f.name)}</span>`
+        + (isPinned(f.path) ? '<span class="pin" title="Pinned"><svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path fill="currentColor" d="M10.2 1.3 14.7 5.8l-1.1 1.1-.9-.3-2.5 2.5.3 2.8-1.1 1.1-2.6-2.6L3 14.2l-1.2-.2-.2-1.2 3.8-3.8L2.8 6.4l1.1-1.1 2.8.3 2.5-2.5-.3-.9z"/></svg></span>' : '');
       container.appendChild(row);
       if (open) { const kids = document.createElement('div'); kids.className = 'kids'; walk(f, kids); container.appendChild(kids); }
     }
@@ -87,7 +165,7 @@ el.tree.addEventListener('click', (e) => {
   const row = e.target.closest('.ti'); if (!row) return;
   const { path, type } = row.dataset;
   if (type === 'folder') { S.open.has(path) ? S.open.delete(path) : S.open.add(path); saveOpen(); renderTree(); }
-  else if (type === 'note') openNote(path, { newTab: e.ctrlKey || e.metaKey });
+  else if (type === 'note') { openNote(path, { newTab: e.ctrlKey || e.metaKey }); closeMobilePanels(); }
   else window.open(vaultUrl(path), '_blank');
 });
 el.tree.addEventListener('auxclick', (e) => {
@@ -97,12 +175,21 @@ el.tree.addEventListener('auxclick', (e) => {
 el.tree.addEventListener('contextmenu', (e) => {
   e.preventDefault();
   const row = e.target.closest('.ti');
-  if (!row) return showCtx(e, [{ label: 'New note', fn: () => newNote('') }, { label: 'New folder', fn: () => newFolder('') }]);
+  if (!row) {
+    const custom = Object.keys(S.folders.order).length > 0;
+    return showCtx(e, [{ label: 'New note', fn: () => newNote('') }, { label: 'New folder', fn: () => newFolder('') },
+      ...(custom ? ['-', { label: 'Sort folders A→Z (keeps pins)', fn: () => { S.folders.order = {}; saveFolderPrefs(); } }] : [])]);
+  }
   const { path, type } = row.dataset;
   if (type === 'folder') {
+    const g = folderGroup(path), i = g.indexOf(path);
     showCtx(e, [
       { label: 'New note here', fn: () => newNote(path) },
       { label: 'New folder here', fn: () => newFolder(path) },
+      '-',
+      { label: isPinned(path) ? 'Unpin' : 'Pin to top', fn: () => togglePin(path) },
+      ...(i > 0 ? [{ label: 'Move up', fn: () => moveFolder(path, -1) }] : []),
+      ...(i >= 0 && i < g.length - 1 ? [{ label: 'Move down', fn: () => moveFolder(path, 1) }] : []),
       '-',
       { label: 'Rename…', fn: () => renamePath(path, 'folder') },
       { label: 'Delete', danger: true, fn: () => deletePath(path, 'folder') },
@@ -124,29 +211,40 @@ el.tree.addEventListener('contextmenu', (e) => {
   }
 });
 // drag & drop move
-let dragPath = null;
-el.tree.addEventListener('dragstart', (e) => { const r = e.target.closest('.ti'); if (!r) return; dragPath = r.dataset.path; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', `[[${base(dragPath)}]]`); });
+let dragPath = null, dragType = null, dropAt = null;
+const clearDrop = () => $$('.drop-target, .drop-before, .drop-after', el.tree).forEach((x) => x.classList.remove('drop-target', 'drop-before', 'drop-after'));
+el.tree.addEventListener('dragstart', (e) => { const r = e.target.closest('.ti'); if (!r) return; dragPath = r.dataset.path; dragType = r.dataset.type; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', `[[${base(dragPath)}]]`); });
 el.tree.addEventListener('dragover', (e) => {
   if (!dragPath) return;
   e.preventDefault();
-  $$('.drop-target', el.tree).forEach((x) => x.classList.remove('drop-target'));
+  clearDrop(); dropAt = null;
   const r = e.target.closest('.ti.folder');
-  r?.classList.add('drop-target');
+  if (!r) return;
+  // a folder dragged near the top or bottom edge of a sibling folder is reordered; the middle moves it inside
+  if (dragType === 'folder' && r.dataset.path !== dragPath && dirOf(r.dataset.path) === dirOf(dragPath)) {
+    const box = r.getBoundingClientRect(), y = (e.clientY - box.top) / box.height;
+    const where = y < 0.35 ? 'before' : y > 0.65 && !r.classList.contains('open') ? 'after' : null;
+    if (where) { dropAt = { target: r.dataset.path, where }; r.classList.add('drop-' + where); return; }
+  }
+  r.classList.add('drop-target');
 });
-el.tree.addEventListener('dragleave', (e) => { if (!el.tree.contains(e.relatedTarget)) $$('.drop-target', el.tree).forEach((x) => x.classList.remove('drop-target')); });
+el.tree.addEventListener('dragleave', (e) => { if (!el.tree.contains(e.relatedTarget)) clearDrop(); });
 el.tree.addEventListener('drop', async (e) => {
   if (!dragPath) return;
   e.preventDefault();
-  $$('.drop-target', el.tree).forEach((x) => x.classList.remove('drop-target'));
+  clearDrop();
+  if (dropAt) { const { target, where } = dropAt; dropAt = null; placeFolder(dragPath, target, where); dragPath = null; return; }
   const r = e.target.closest('.ti');
   let folder = r ? (r.dataset.type === 'folder' ? r.dataset.path : dirOf(r.dataset.path)) : '';
   const src = dragPath; dragPath = null;
   if (folder === src || folder.startsWith(src + '/') || dirOf(src) === folder) return;
   await doRename(src, join(folder, src.split('/').pop()), false);
 });
-el.tree.addEventListener('dragend', () => { dragPath = null; });
+el.tree.addEventListener('dragend', () => { dragPath = null; dropAt = null; clearDrop(); });
 $('#sort').value = store.get('sort', 'name');
-$('#sort').addEventListener('change', () => { store.set('sort', $('#sort').value); renderTree(); });
+const showSort = () => { $('#sort-label').textContent = $('#sort').selectedOptions[0]?.textContent || 'A→Z'; };
+showSort();
+$('#sort').addEventListener('change', () => { store.set('sort', $('#sort').value); showSort(); renderTree(); });
 
 // ------------------------------------------------------------------ sidebars
 function setTab(name) {
@@ -335,7 +433,7 @@ async function createNote(path, content = '', { focusTitle = false, newTab = fal
 }
 async function newNote(folder) {
   if (folder == null) folder = '';
-  await createNote(uniquePath(folder, 'Untitled'), '');  // cursor in the note; the grey name can be clicked to rename
+  await createNote(uniquePath(folder, 'Untitled'), '', { focusTitle: true });  // type the name over the grey "Untitled", Enter to start the note
 }
 async function newFolder(parent = '') {
   const name = await ask('New folder name', '');
@@ -362,6 +460,7 @@ async function doRename(from, to, updateLinks = true) {
       }
     }
     if (remapBookmarks(remap)) saveBookmarks();
+    if (remapFolderPrefs(remap, from, r.path)) api('PUT', 'config/folders', { body: S.folders }).catch(() => {});
     await refreshIndex();
     for (const p of W.panes) p.show();
     activeChanged();
@@ -397,6 +496,7 @@ async function deletePath(path, type) {
     for (const t of allTabs()) { t.hist = t.hist.filter((p) => !gone(p)); t.hi = Math.min(t.hi, t.hist.length - 1); }
     S.bookmarks = S.bookmarks.filter((b) => !(b.path && gone(b.path)));
     saveBookmarks();
+    if (S.folders.pinned.some(gone)) { S.folders.pinned = S.folders.pinned.filter((p) => !gone(p)); api('PUT', 'config/folders', { body: S.folders }).catch(() => {}); }
     await refreshIndex();
     for (const p of W.panes) p.show();
     toast('Moved to .trash');
@@ -419,14 +519,25 @@ async function copyText(t) { try { await navigator.clipboard.writeText(t); toast
 
 // ------------------------------------------------------------------ modes / layout
 function toggleLeft(force) {
-  if (innerWidth <= 800) { el.app.classList.toggle('show-left-mobile'); return; }
+  if (isPhone()) { showMobilePanel('left', force); return; }
   const hide = force === true ? false : force === false ? true : !el.app.classList.contains('no-left');
   el.app.classList.toggle('no-left', hide); store.set('noLeft', hide);
 }
-function toggleRight() { const h = !el.app.classList.contains('no-right'); el.app.classList.toggle('no-right', h); store.set('noRight', h); }
+function toggleRight() {
+  if (isPhone()) { showMobilePanel('right'); return; }
+  const h = !el.app.classList.contains('no-right'); el.app.classList.toggle('no-right', h); store.set('noRight', h);
+}
+// Phones have room for one column: a side panel covers the note until you pick something or tap its button again.
+const isPhone = () => innerWidth <= 800;
+function showMobilePanel(side, force) {
+  const cls = 'show-' + side + '-mobile', show = force === true ? true : force === false ? false : !el.app.classList.contains(cls);
+  el.app.classList.remove('show-left-mobile', 'show-right-mobile');
+  if (show) el.app.classList.add(cls);
+}
+function closeMobilePanels() { el.app.classList.remove('show-left-mobile', 'show-right-mobile'); }
 function toggleTheme() {
   const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-  store.set('theme', t); applyTheme();
+  fadeTheme(); store.set('theme', t); applyTheme();
   themeChanged();
   if (!$('#settings').hidden) renderSettings();
 }
@@ -516,7 +627,7 @@ function bookmarkLabel(b) {
 function renderBookmarks() {
   const box = $('#bookmark-list');
   if (!box) return;
-  if (!S.bookmarks.length) { box.innerHTML = '<div class="empty" style="padding:10px">No bookmarks yet. Use ☆ in a note\'s header, right-click a file, or bookmark a search.</div>'; return; }
+  if (!S.bookmarks.length) { box.innerHTML = '<div class="empty" style="padding:10px">No bookmarks yet. Use the bookmark button in a note\'s header, right-click a file, or bookmark a search.</div>'; return; }
   box.innerHTML = S.bookmarks.map((b, i) => {
     const missing = b.path && !S.noteByPath.has(b.path);
     const icon = b.type === 'search' ? '⌕' : b.type === 'heading' ? '§' : '★';

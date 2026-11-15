@@ -11,6 +11,8 @@ const join = (d, n) => (d ? d + '/' + n : n);
 const vaultUrl = (p) => '/vault/' + p.split('/').map(encodeURIComponent).join('/');
 const isImg = (p) => /\.(png|jpe?g|gif|webp|svg|bmp|avif)$/i.test(p);
 const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+/** The bookmark shape used on the Bookmarks tab, so every bookmark button looks the same. */
+const BM_ICON = '<svg class="ic ic-bm" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.5h7v11L8 11l-3.5 2.5z"/></svg>';
 const store = {
   get(k, d) { try { const v = localStorage.getItem('iw.' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
   set(k, v) { try { localStorage.setItem('iw.' + k, JSON.stringify(v)); } catch {} },
@@ -56,6 +58,7 @@ const S = {
   open: new Set(store.get('open', [])),
   contentCache: new Map(),
   bookmarks: [],
+  folders: { pinned: [], order: {} },  // folder pins and order, saved in the vault
   // S.cur (the active tab's note: {path, mtime, dirty}) is defined in workspace.js
 };
 

@@ -1,5 +1,5 @@
 ---
-guide-version: 5
+guide-version: 6
 tags:
   - inkwell
 ---
@@ -15,6 +15,7 @@ Everything below is a working example. Switch this note to **Source** mode (top 
 - **New note:** `Alt+N`, the ✚ button, or right-click in the file list.
 - **Rename:** click the big title at the top of a note and type. Links to it elsewhere update by themselves.
 - **Move:** drag a note onto a folder in the file list.
+- **Pin and arrange folders:** right-click a folder → **Pin to top**, **Move up** or **Move down**. Or drag a folder just above or below another one. Right-click an empty part of the list → **Sort folders A→Z** to undo your order (pins stay). The order is saved with your notes, so it's the same on every device.
 - **Delete:** right-click → Delete. It goes to the `.trash` folder in your vault, not gone for good.
 - **Find a note fast:** `Ctrl+O`, start typing, Enter. `Shift+Enter` creates a note with that name.
 
@@ -128,15 +129,14 @@ Raw HTML shows as it would on a website, with its own styles and scripts:
 
 Each HTML block runs in a sealed box, so its scripts can't touch your other notes.
 
-## Live, Source and Read
+## Live and Source
 
-The three buttons at the top right of every note:
+The two buttons at the top right of every note:
 
 - **Live** shows formatting as you type and reveals the codes on the line you're editing.
 - **Source** shows everything as plain text.
-- **Read** shows the finished note, with nothing to edit by accident.
 
-`Ctrl+E` switches to Read and back. `Ctrl+Shift+E` switches between Live and Source.
+`Ctrl+Shift+E` switches between them. For a finished, read-only view with nothing to edit by accident (handy on a phone, where tapping a note brings up the keyboard), press `Ctrl+E`, or choose **Reading view** in the command palette. `Ctrl+E` again goes back.
 
 ## Tabs and side by side
 
@@ -149,7 +149,7 @@ Inkwell remembers your tabs when you close it.
 
 ## Bookmarks
 
-Click the ☆ at the top of a note (or press `Alt+B`) to bookmark it. Bookmarks appear in the **Bookmarks** tab on the left. You can also bookmark a search (☆ beside the search box) or a heading (right-click it in the Outline). Drag bookmarks to reorder them.
+Click the bookmark button at the top of a note (or press `Alt+B`) to bookmark it; it fills in when the note is bookmarked. Bookmarks appear in the **Bookmarks** tab on the left. You can also bookmark a search (the same button beside the search box) or a heading (right-click it in the Outline). Drag bookmarks to reorder them.
 
 ## Search
 
@@ -263,7 +263,7 @@ Email robert@nightfallautomotive.co.uk, or use **⚙ Settings → Report a probl
 | `Ctrl+O` | Find or create a note |
 | `Alt+N` | New note |
 | `Alt+D` | Today's daily note |
-| `Ctrl+E` | Read mode on and off |
+| `Ctrl+E` | Reading view on and off (read-only) |
 | `Ctrl+Shift+E` | Live and Source |
 | `Alt+T` / `Alt+W` | New tab / close tab |
 | `Alt+\` | Side by side |

@@ -2,11 +2,13 @@
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <title>Inkwell</title>
 <link rel="icon" type="image/svg+xml" href="brand/skull.svg">
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#2e3440">
+<meta name="theme-color" id="theme-color" content="#2e3440"><!-- kept matching the top bar by applySettings() -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="apple-touch-icon" href="brand/apple-touch-icon.png">
 <link rel="stylesheet" href="app.css">
 </head>
@@ -14,42 +16,45 @@
 <div id="app">
   <!-- ribbon -->
   <nav id="ribbon">
-    <button class="rb" data-cmd="toggle-left" title="Toggle sidebar (Ctrl+\)">☰</button>
-    <button class="rb" data-cmd="new-note" title="New note (Alt+N)">✚</button>
-    <button class="rb" data-cmd="daily" title="Today's daily note (Alt+D)">◷</button>
-    <button class="rb" data-cmd="switcher" title="Quick switcher (Ctrl+O)">⌕</button>
-    <button class="rb" data-cmd="graph" title="Graph view (Ctrl+G)">✳</button>
-    <button class="rb" data-cmd="palette" title="Command palette (Ctrl+P)">⌘</button>
+    <button class="rb" data-cmd="toggle-left" title="Show or hide the file list (Ctrl+\)" aria-label="Show or hide the file list (Ctrl+\)"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="3" width="12" height="10" rx="2"/><path d="M6.25 3v10"/></svg></button>
+    <button class="rb" data-cmd="new-note" title="New note (Alt+N)" aria-label="New note (Alt+N)"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M9.5 2.5h-5a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1v-7z"/><path d="M9.5 2.5v3h3M8 7.5v4M6 9.5h4"/></svg></button>
+    <button class="rb" data-cmd="daily" title="Today's daily note (Alt+D)" aria-label="Today's daily note (Alt+D)"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="3.5" width="11" height="10" rx="1.5"/><path d="M2.5 6.75h11M5.5 2v3M10.5 2v3"/></svg></button>
+    <button class="rb" data-cmd="switcher" title="Open a note by name (Ctrl+O)" aria-label="Open a note by name (Ctrl+O)"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M7.5 13.5h-3a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h5l3 3v1.75"/><path d="M9.5 2.5v3h3"/><circle cx="10.25" cy="10.25" r="2.1"/><path d="m11.8 11.8 1.7 1.7"/></svg></button>
+    <button class="rb" data-cmd="graph" title="Graph view (Ctrl+G)" aria-label="Graph view (Ctrl+G)"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><circle cx="4" cy="4.5" r="1.75"/><circle cx="12" cy="6" r="1.75"/><circle cx="6.5" cy="12" r="1.75"/><path d="M5.7 4.8l4.6.9M11 7.4l-3.4 3.3M4.5 6.2l1.4 4.1"/></svg></button>
+    <button class="rb" data-cmd="palette" title="Command palette (Ctrl+P)" aria-label="Command palette (Ctrl+P)"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="3" width="12" height="10" rx="2"/><path d="m5 6.75 2 1.75-2 1.75M8.5 10.5H11"/></svg></button>
     <div class="rb-spacer"></div>
-    <button class="rb" data-cmd="theme" title="Toggle light/dark">◐</button>
-    <button class="rb" data-cmd="settings" title="Settings (Ctrl+,)">⚙</button>
-    <button class="rb" data-cmd="toggle-right" title="Toggle right panel">⫴</button>
+    <button class="rb rb-theme" data-cmd="theme" title="Switch between light and dark" aria-label="Switch between light and dark"><svg class="ic ic-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.25 9.6A5.5 5.5 0 0 1 6.4 2.75a5.5 5.5 0 1 0 6.85 6.85z"/></svg><svg class="ic ic-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2.75"/><path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1.06 1.06M11.54 11.54l1.06 1.06M3.4 12.6l1.06-1.06M11.54 4.46l1.06-1.06"/></svg></button>
+    <button class="rb" data-cmd="settings" title="Settings (Ctrl+,)" aria-label="Settings (Ctrl+,)"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M12.61 6.34 L14.14 6.60 L14.14 9.40 L12.61 9.66 L12.43 10.09 L13.34 11.35 L11.35 13.34 L10.09 12.43 L9.66 12.61 L9.40 14.14 L6.60 14.14 L6.34 12.61 L5.91 12.43 L4.65 13.34 L2.66 11.35 L3.57 10.09 L3.39 9.66 L1.86 9.40 L1.86 6.60 L3.39 6.34 L3.57 5.91 L2.66 4.65 L4.65 2.66 L5.91 3.57 L6.34 3.39 L6.60 1.86 L9.40 1.86 L9.66 3.39 L10.09 3.57 L11.35 2.66 L13.34 4.65 L12.43 5.91Z"/><circle cx="8" cy="8" r="2"/></svg></button>
+    <button class="rb" data-cmd="toggle-right" title="Show or hide the right panel: backlinks, outline, tags" aria-label="Show or hide the right panel: backlinks, outline, tags"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="3" width="12" height="10" rx="2"/><path d="M9.75 3v10"/></svg></button>
   </nav>
 
   <!-- left sidebar -->
   <aside id="left">
     <div class="side-tabs">
-      <button class="st active" data-tab="files">Files</button>
-      <button class="st" data-tab="search">Search</button>
-      <button class="st" data-tab="tags">Tags</button>
-      <button class="st" data-tab="bookmarks">Bookmarks</button>
+      <button class="st active" data-tab="files" title="Files" aria-label="Files"><svg class="st-i" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4.5a1 1 0 0 1 1-1h3l1.5 1.5h4.5a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1z"/></svg><span class="st-l">Files</span></button>
+      <button class="st" data-tab="search" title="Search" aria-label="Search"><svg class="st-i" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.25"/><path d="m10.2 10.2 3.3 3.3"/></svg><span class="st-l">Search</span></button>
+      <button class="st" data-tab="tags" title="Tags" aria-label="Tags"><svg class="st-i" viewBox="0 0 16 16" aria-hidden="true"><path d="M6.25 2.5 5.25 13.5M10.75 2.5l-1 11M2.75 6h11M2.25 10h11"/></svg><span class="st-l">Tags</span></button>
+      <button class="st" data-tab="bookmarks" title="Bookmarks" aria-label="Bookmarks"><svg class="st-i" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.5h7v11L8 11l-3.5 2.5z"/></svg><span class="st-l">Bookmarks</span></button>
     </div>
     <section class="pane" id="pane-files">
       <div class="pane-tools">
-        <button data-cmd="new-note" title="New note">＋ Note</button>
-        <button data-cmd="new-folder" title="New folder">＋ Folder</button>
-        <button data-cmd="collapse-all" title="Collapse all">⇱</button>
-        <select id="sort" title="Sort">
-          <option value="name">A→Z</option>
-          <option value="mtime">Modified</option>
-          <option value="ctime">Created</option>
-        </select>
+        <button data-cmd="new-note" title="New note" aria-label="New note"><svg class="pt-i" viewBox="0 0 16 16" aria-hidden="true"><path d="M9.5 2.5h-5a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1v-7z"/><path d="M9.5 2.5v3h3M8 7.5v4M6 9.5h4"/></svg><span class="pt-w">＋ Note</span></button>
+        <button data-cmd="new-folder" title="New folder" aria-label="New folder"><svg class="pt-i" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4.5a1 1 0 0 1 1-1h3l1.5 1.5h4.5a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1z"/><path d="M8 7.25v3.5M6.25 9h3.5"/></svg><span class="pt-w">＋ Folder</span></button>
+        <button data-cmd="collapse-all" title="Close all folders" aria-label="Close all folders"><svg class="pt-i pt-on" viewBox="0 0 16 16" aria-hidden="true"><path d="m5 2.75 3 3 3-3M5 13.25l3-3 3 3"/></svg></button>
+        <label class="sort-pick" title="Sort notes">
+          <span class="sort-l" id="sort-label">A→Z</span><svg class="sort-caret" viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4"/></svg>
+          <select id="sort" aria-label="Sort notes">
+            <option value="name">A→Z</option>
+            <option value="mtime">Modified</option>
+            <option value="ctime">Created</option>
+          </select>
+        </label>
       </div>
       <div id="tree" tabindex="0"></div>
       <div id="vault-path" class="muted small"></div>
     </section>
     <section class="pane" id="pane-search" hidden>
-      <div class="search-row"><input id="search-input" type="search" placeholder="Search notes…  (tag:foo, path:bar)" autocomplete="off"><button id="search-bm" title="Bookmark this search">☆</button></div>
+      <div class="search-row"><input id="search-input" type="search" placeholder="Search notes…  (tag:foo, path:bar)" autocomplete="off"><button id="search-bm" title="Bookmark this search" aria-label="Bookmark this search"><svg class="ic ic-bm" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.5h7v11L8 11l-3.5 2.5z"/></svg></button></div>
       <div id="search-results"></div>
     </section>
     <section class="pane" id="pane-tags" hidden>
@@ -140,6 +145,8 @@
       <div class="seg" id="set-font"><button data-v="serif">Serif</button><button data-v="sans">Sans</button><button data-v="mono">Mono</button></div></div>
     <div class="set-row"><div class="lbl"><b>Sidebar text size</b><small>File list and the right panel</small></div>
       <div class="seg" id="set-side"><button data-v="0.9">Small</button><button data-v="1">Normal</button><button data-v="1.15">Large</button></div></div>
+    <div class="set-row"><div class="lbl"><b>Sidebar tabs</b><small>Files, Search, Tags and Bookmarks as icons or words</small></div>
+      <div class="seg" id="set-tabs"><button data-v="icons">Icons</button><button data-v="text">Text</button></div></div>
 
     <h3>Colours</h3>
     <div class="set-row"><div class="lbl"><b>Theme</b></div>

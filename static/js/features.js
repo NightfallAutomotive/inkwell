@@ -577,6 +577,7 @@ async function checkServer() {
   if (w.r) el.app.style.setProperty('--right-w', w.r);
   if (store.get('noLeft', false)) el.app.classList.add('no-left');
   if (store.get('noRight', false)) el.app.classList.add('no-right');
+  await loadFolderPrefs();
   await refreshIndex();
   checkServer();
   await loadBookmarks();

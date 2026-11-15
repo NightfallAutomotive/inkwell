@@ -170,7 +170,7 @@ META = ".inkwell"                  # per-vault app data (bookmarks, snapshots)
 SNAP_INTERVAL = 5 * 60             # at most one automatic snapshot per note per 5 minutes
 SNAP_KEEP_DAYS = 14
 SNAP_MAX = 100                     # per note
-CONFIG_NAMES = {"bookmarks"}
+CONFIG_NAMES = {"bookmarks", "folders"}
 
 
 # ---------------------------------------------------------------- helpers

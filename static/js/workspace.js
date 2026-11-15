@@ -132,8 +132,8 @@ class Pane {
         <button class="nav back" title="Back (Alt+←)">‹</button><button class="nav fwd" title="Forward (Alt+→)">›</button>
         <div class="crumbs muted"></div><div class="head-spacer"></div>
         <span class="save-state muted small"></span>
-        <button class="hbtn bm" title="Bookmark this note (Alt+B)">☆</button>
-        <div class="seg mode-seg"><button data-mode="live" title="Live preview (Ctrl+E toggles reading)">Live</button><button data-mode="source" title="Source mode (Ctrl+Shift+E)">Source</button><button data-mode="read" title="Reading view (Ctrl+E)">Read</button></div>
+        <button class="hbtn bm" title="Bookmark this note (Alt+B)" aria-label="Bookmark this note">${BM_ICON}</button>
+        <div class="seg mode-seg"><button data-mode="live" title="Live preview: formatting shows as you type (Ctrl+Shift+E switches)">Live</button><button data-mode="source" title="Source: the plain Markdown text (Ctrl+Shift+E switches)">Source</button></div>
         <button class="hbtn more" title="More options">⋯</button>
       </header>
       <div class="doc mode-live empty">
@@ -335,7 +335,11 @@ class Pane {
     this.renderTabs();
   }
 
-  updateStar() { const on = !!this.active?.doc && isBookmarked(this.active.doc.path); this.bmBtn.textContent = on ? '★' : '☆'; this.bmBtn.classList.toggle('on', on); }
+  updateStar() {
+    const on = !!this.active?.doc && isBookmarked(this.active.doc.path);
+    this.bmBtn.classList.toggle('on', on);
+    this.bmBtn.title = on ? 'Remove bookmark (Alt+B)' : 'Bookmark this note (Alt+B)';
+  }
 
   renderRead() {
     const t = this.active;
@@ -531,7 +535,7 @@ function activeChanged() {
   const t = T();
   const path = t?.doc?.path;
   $$('.ti', el.tree).forEach((r) => r.classList.toggle('active', r.dataset.path === path));
-  if (path) { reveal(path); store.set('last', path); history.replaceState(null, '', '#/' + encodeURI(path)); document.title = `${base(path)} — Inkwell`; }
+  if (path) { closeMobilePanels(); reveal(path); store.set('last', path); history.replaceState(null, '', '#/' + encodeURI(path)); document.title = `${base(path)} — Inkwell`; }
   else { document.title = 'Inkwell'; history.replaceState(null, '', '#'); }
   renderRight();
 }

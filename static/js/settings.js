@@ -1,7 +1,7 @@
 /* Inkwell — settings: theme, text size, note font, accent and custom colours. Stored per browser. */
 'use strict';
 
-const SET_DEFAULTS = { size: 16, font: 'serif', side: 1, accent: null, custom: { dark: null, light: null } };
+const SET_DEFAULTS = { size: 16, font: 'serif', side: 1, tabs: 'icons', accent: null, custom: { dark: null, light: null } };
 const ACCENTS = [
   ['Frost', null], ['Teal', '#8fbcbb'], ['Sky', '#81a1c1'], ['Deep blue', '#5e81ac'],
   ['Red', '#bf616a'], ['Orange', '#d08770'], ['Yellow', '#ebcb8b'], ['Green', '#a3be8c'], ['Purple', '#b48ead'],
@@ -28,6 +28,12 @@ function currentTheme() {
   if (t === 'dark' || t === 'light') return t;
   return matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
 }
+/** Switch theme with a short colour fade instead of a sudden flash. */
+function fadeTheme() {
+  const root = document.documentElement;
+  root.classList.add('theme-fade');
+  clearTimeout(fadeTheme.t); fadeTheme.t = setTimeout(() => root.classList.remove('theme-fade'), 300);
+}
 function applyTheme() {
   document.documentElement.dataset.theme = currentTheme();
   applySettings();
@@ -39,6 +45,7 @@ function applySettings() {
   root.style.setProperty('--note-size', SET.size + 'px');
   root.style.setProperty('--note-font', SET.font === 'sans' ? 'var(--sans)' : SET.font === 'mono' ? 'var(--mono)' : 'var(--serif)');
   root.style.setProperty('--side-zoom', SET.side);
+  root.classList.toggle('tabs-text', SET.tabs === 'text');
   // colours go in a stylesheet so the dark/light switch still swaps palettes
   let css = '';
   for (const theme of ['dark', 'light']) {
@@ -48,7 +55,7 @@ function applySettings() {
       const dark = lum(c.bg) < lum(c.fg);
       const towards = dark ? '#ffffff' : '#000000';
       rules += `--bg:${c.bg};--bg2:${dark ? mix(c.bg, '#000000', 0.12) : mix(c.bg, '#000000', 0.03)};--bg3:${mix(c.bg, towards, dark ? 0.09 : 0.08)};--line:${mix(c.bg, towards, dark ? 0.13 : 0.12)};`
-        + `--fg:${c.fg};--fg2:${mix(c.fg, c.bg, 0.22)};--fg3:${mix(c.fg, c.bg, 0.45)};--code-bg:${mix(c.bg, towards, dark ? 0.07 : 0.05)};--unres:${mix(c.fg, c.bg, 0.55)};`;
+        + `--fg:${c.fg};--fg2:${mix(c.fg, c.bg, 0.22)};--fg3:${mix(c.fg, c.bg, 0.36)};--code-bg:${mix(c.bg, towards, dark ? 0.07 : 0.05)};--unres:${mix(c.fg, c.bg, 0.4)};`;
     }
     if (SET.accent) {
       const a = theme === 'light' && lum(SET.accent) > 0.4 ? mix(SET.accent, '#000000', 0.3) : SET.accent;
@@ -60,6 +67,9 @@ function applySettings() {
   let st = $('#user-theme');
   if (!st) { st = document.createElement('style'); st.id = 'user-theme'; document.head.appendChild(st); }
   st.textContent = css;
+  // phone status bar / browser bar follows the top bar's colour, custom colours included
+  const meta = $('#theme-color');
+  if (meta) meta.content = getComputedStyle(root).getPropertyValue('--bg2').trim() || '#2e3440';
 }
 
 /** Redraw things that read colours once (graphs, HTML frames, rendered notes). */
@@ -85,6 +95,7 @@ function renderSettings() {
   const on = (sel, v) => $$(sel + ' button').forEach((b) => b.classList.toggle('on', b.dataset.v === String(v)));
   on('#set-font', SET.font);
   on('#set-side', SET.side);
+  on('#set-tabs', SET.tabs);
   on('#set-theme', store.get('theme', 'system'));
   $('#set-accent').innerHTML = ACCENTS.map(([name, c]) => `<button class="sw${(SET.accent || null) === c ? ' on' : ''}" data-c="${c || ''}" title="${name}${c ? '' : ' (Nord default)'}" aria-label="${name}" style="background:${c || (theme === 'dark' ? '#88c0d0' : '#5e81ac')}"></button>`).join('')
     + `<input type="color" class="sw-custom" id="set-accent-custom" title="Pick any colour" value="${SET.accent || (theme === 'dark' ? '#88c0d0' : '#5e81ac')}">`;
@@ -100,9 +111,10 @@ function changed({ colours = false } = {}) { saveSettings(); applySettings(); re
 $('#set-size').addEventListener('input', (e) => { SET.size = +e.target.value; changed(); });
 $('#set-font').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { SET.font = b.dataset.v; changed(); } });
 $('#set-side').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { SET.side = +b.dataset.v; changed(); } });
+$('#set-tabs').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { SET.tabs = b.dataset.v; changed(); } });
 $('#set-theme').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b) return;
-  store.set('theme', b.dataset.v); applyTheme(); renderSettings(); themeChanged();
+  fadeTheme(); store.set('theme', b.dataset.v); applyTheme(); renderSettings(); themeChanged();
 });
 $('#set-accent').addEventListener('click', (e) => { const b = e.target.closest('.sw'); if (b) { SET.accent = b.dataset.c || null; changed({ colours: true }); } });
 $('#set-accent').addEventListener('input', (e) => { if (e.target.id === 'set-accent-custom') { SET.accent = e.target.value; saveSettings(); applySettings(); themeChangedSoon(); } });
